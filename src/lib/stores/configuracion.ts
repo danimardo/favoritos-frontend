@@ -6,6 +6,7 @@ import type { ConfigResponse } from '$lib/types/api';
 interface ConfiguracionState {
 	configured: boolean;
 	apiUrl: string | null;
+	logLevel: string;
 	loading: boolean;
 	error: string | null;
 }
@@ -13,6 +14,7 @@ interface ConfiguracionState {
 const initialState: ConfiguracionState = {
 	configured: false,
 	apiUrl: null,
+	logLevel: 'info',
 	loading: false,
 	error: null
 };
@@ -31,6 +33,7 @@ function createConfiguracionStore() {
 					...s,
 					configured: response.configured,
 					apiUrl: response.apiUrl ?? null,
+					logLevel: response.logLevel || 'info',
 					loading: false
 				}));
 			} catch (error) {
@@ -42,14 +45,15 @@ function createConfiguracionStore() {
 			}
 		},
 
-		async save(apiUrl: string, apiKey: string) {
+		async save(apiUrl: string, apiKey: string, logLevel: string) {
 			update((s) => ({ ...s, loading: true, error: null }));
 			try {
-				await invoke('config_save', { apiUrl, apiKey });
+				await invoke('config_save', { apiUrl, apiKey, logLevel });
 				update((s) => ({
 					...s,
 					configured: true,
 					apiUrl,
+					logLevel,
 					loading: false
 				}));
 			} catch (error) {

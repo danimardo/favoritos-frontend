@@ -2,7 +2,8 @@
 
 **Feature Branch**: `001-favoritos-desktop`
 **Created**: 2026-03-07
-**Status**: Draft
+**Status**: Completed
+**Implementation Date**: 2026-03-07
 **Input**: User description: "Especificaciones completas de la aplicación Favoritos Desktop - Frontend para API Favoritos con Tauri v2, SvelteKit, Tailwind CSS y Shadcn-Svelte"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -61,7 +62,7 @@ Como usuario, necesito buscar y abrir rápidamente un favorito sin tener que abr
 1. **Given** la aplicación está ejecutándose en segundo plano, **When** el usuario presiona `Alt+Space`, **Then** se abre una ventana pequeña, centrada y sin bordes con el componente de búsqueda
 2. **Given** la ventana de búsqueda está abierta, **When** el usuario escribe términos de búsqueda, **Then** la lista de favoritos se filtra instantáneamente según FR-013 (<50ms)
 3. **Given** el usuario selecciona un favorito de la búsqueda, **When** presiona Enter, **Then** el favorito se abre en el navegador predeterminado y la ventana se cierra
-4. **Given** la ventana de búsqueda está abierta, **When** el usuario presiona `Esc`, **Then** la ventana se cierra sin abrir ningún favorito
+4. **Given** la ventana de búsqueda está abierta, **When** el usuario presiona `Esc` o hace clic fuera de la ventana (pierde el foco), **Then** la ventana se oculta automáticamente (Spotlight-style)
 
 ---
 
@@ -131,7 +132,8 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 
 - **FR-001**: La aplicación DEBE verificar al inicio si existe configuración de API (api_key y base_url) almacenada
 - **FR-002**: La aplicación DEBE redirigir al panel de configuración si no existe configuración válida
-- **FR-003**: La aplicación DEBE validar la conexión a la API mediante el endpoint `/health`
+- **FR-003**: La aplicación DEBE validar la conexión a la API y la validez de la API Key realizando una petición de prueba a un endpoint protegido (ej: `/bookmarks`).
+- **FR-026**: La aplicación DEBE permitir al usuario configurar el nivel de log (Error, Warn, Info, Debug) y persistir esta preferencia.
 - **FR-004**: La aplicación DEBE almacenar de forma segura (credential store) la API Key y URL base
 - **FR-005**: La aplicación DEBE permitir crear favoritos con URL, título, descripción, carpeta y etiquetas
 - **FR-006**: La aplicación DEBE permitir editar favoritos existentes

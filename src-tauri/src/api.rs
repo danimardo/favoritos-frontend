@@ -41,24 +41,35 @@ impl ApiClient {
         }
     }
 
-    /// Check API health/connectivity
-    pub async fn health(&self) -> Result<HealthResponse, ApiError> {
-        let url = format!("{}/health", self.base_url);
+    /// Validate credentials by attempting to fetch a small list of favorites
+    pub async fn validate_credentials(&self) -> Result<(), ApiError> {
+        let url = format!("{}/bookmarks", self.base_url);
+        tracing::info!("Validando conexión a: {}", url);
+        
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
         if response.status().is_success() {
-            let health: HealthResponse = response.json().await?;
-            Ok(health)
+            tracing::info!("Validación exitosa");
+            Ok(())
         } else {
-            Err(ApiError::Message(format!(
-                "Health check failed: {}",
-                response.status()
-            )))
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Validación fallida: {} - {}", status, error_body);
+            
+            if status == 401 || status == 403 {
+                Err(ApiError::Message("API Key inválida o sin permisos".to_string()))
+            } else {
+                Err(ApiError::Message(format!(
+                    "Error de validación ({}): {}",
+                    status,
+                    error_body
+                )))
+            }
         }
     }
 
@@ -68,7 +79,7 @@ impl ApiClient {
         page: Option<u32>,
         limit: Option<u32>,
     ) -> Result<Vec<serde_json::Value>, ApiError> {
-        let mut url = format!("{}/favorites", self.base_url);
+        let mut url = format!("{}/bookmarks", self.base_url);
         let mut params = Vec::new();
 
         if let Some(p) = page {
@@ -85,7 +96,7 @@ impl ApiClient {
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -102,11 +113,11 @@ impl ApiClient {
 
     /// Get a single favorite by ID
     pub async fn get_favorite(&self, id: &str) -> Result<serde_json::Value, ApiError> {
-        let url = format!("{}/favorites/{}", self.base_url, id);
+        let url = format!("{}/bookmarks/{}", self.base_url, id);
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -131,7 +142,7 @@ impl ApiClient {
         let response = self
             .client
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .json(&favorite)
             .send()
             .await?;
@@ -154,11 +165,11 @@ impl ApiClient {
         id: &str,
         favorite: serde_json::Value,
     ) -> Result<serde_json::Value, ApiError> {
-        let url = format!("{}/favorites/{}", self.base_url, id);
+        let url = format!("{}/bookmarks/{}", self.base_url, id);
         let response = self
             .client
             .put(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .json(&favorite)
             .send()
             .await?;
@@ -177,11 +188,11 @@ impl ApiClient {
 
     /// Delete a favorite
     pub async fn delete_favorite(&self, id: &str) -> Result<(), ApiError> {
-        let url = format!("{}/favorites/{}", self.base_url, id);
+        let url = format!("{}/bookmarks/{}", self.base_url, id);
         let response = self
             .client
             .delete(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -204,7 +215,7 @@ impl ApiClient {
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -226,7 +237,7 @@ impl ApiClient {
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -248,7 +259,7 @@ impl ApiClient {
         let response = self
             .client
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -271,7 +282,7 @@ impl ApiClient {
         let response = self
             .client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .send()
             .await?;
 
@@ -296,7 +307,7 @@ impl ApiClient {
         let response = self
             .client
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("X-API-Key", &self.api_key)
             .json(&body)
             .send()
             .await?;

@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+dist/
+build/
+.svelte-kit/
+.env*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tauri
+src-tauri/target/
+src-tauri/bin/
+src-tauri/gen/
+
+# Rust
+target/
+**/*.rs.bk
+debug/
+release/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# IDEs
+.vscode/
+.idea/
+
+# Tests
+tests-results/
+coverage/
+playwright-report/
+blob-report/
+test-results/

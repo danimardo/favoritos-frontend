@@ -4,12 +4,11 @@ use crate::cache::FaviconCache;
 use crate::config::{ApiConfig, ConfigManager};
 use crate::notifications;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 pub struct AppState {
-    pub favicon_cache: Mutex<Option<FaviconCache>>,
+    pub favicon_cache: tokio::sync::Mutex<Option<FaviconCache>>,
 }
 
 // ==================== Config Commands ====================
@@ -18,6 +17,7 @@ pub struct AppState {
 pub struct ConfigResponse {
     pub configured: bool,
     pub api_url: Option<String>,
+    pub log_level: String,
 }
 
 #[tauri::command]
@@ -25,22 +25,23 @@ pub fn config_get() -> Result<ConfigResponse, String> {
     match ConfigManager::get() {
         Ok(config) => Ok(ConfigResponse {
             configured: config.is_some(),
-            api_url: config.map(|c| c.api_url),
+            api_url: config.as_ref().map(|c| c.api_url.clone()),
+            log_level: config.map(|c| c.log_level).unwrap_or_else(|| "info".to_string()),
         }),
         Err(e) => Err(e.to_string()),
     }
 }
 
 #[tauri::command]
-pub fn config_save(api_url: String, api_key: String) -> Result<(), String> {
-    let config = ApiConfig::new(api_url, api_key);
+pub fn config_save(api_url: String, api_key: String, log_level: String) -> Result<(), String> {
+    let config = ApiConfig::new(api_url, api_key, log_level);
     ConfigManager::save(&config).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn config_validate(api_url: String, api_key: String) -> Result<bool, String> {
     let client = ApiClient::new(api_url, api_key);
-    match client.health().await {
+    match client.validate_credentials().await {
         Ok(_) => Ok(true),
         Err(ApiError::Message(msg)) => Err(msg),
         Err(e) => Err(e.to_string()),
@@ -130,7 +131,7 @@ pub async fn favorites_visit(app: AppHandle, id: String) -> Result<serde_json::V
 
     // Open URL in default browser
     if let Some(url) = favorite.get("url").and_then(|v| v.as_str()) {
-        open::that(url).ok();
+        app.opener().open_url(url, None::<&str>).ok();
     }
 
     // Return updated favorite (with incremented visit count)
@@ -138,8 +139,8 @@ pub async fn favorites_visit(app: AppHandle, id: String) -> Result<serde_json::V
 }
 
 #[tauri::command]
-pub fn favorites_open_url(url: String) -> Result<(), String> {
-    open::that(&url).map_err(|e| e.to_string())
+pub fn favorites_open_url(app: AppHandle, url: String) -> Result<(), String> {
+    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
 
 // ==================== Folder Commands ====================
@@ -183,7 +184,7 @@ pub async fn cache_favicon_get(
     domain: String,
     state: State<'_, AppState>,
 ) -> Result<Option<String>, String> {
-    let cache_guard = state.favicon_cache.lock().map_err(|e| e.to_string())?;
+    let cache_guard = state.favicon_cache.lock().await;
     if let Some(cache) = cache_guard.as_ref() {
         Ok(cache.get(&domain).map(|p| p.to_string_lossy().to_string()))
     } else {
@@ -196,8 +197,8 @@ pub async fn cache_favicon_set(
     domain: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let cache_guard = state.favicon_cache.lock().map_err(|e| e.to_string())?;
-    if let Some(cache) = cache_guard.as_ref() {
+    let mut cache_guard = state.favicon_cache.lock().await;
+    if let Some(cache) = cache_guard.as_mut() {
         let path = cache
             .fetch_and_cache(&domain)
             .await

@@ -11,6 +11,8 @@ export interface Favorito {
 	tags?: string[];
 	folder?: string;
 	visitCount: number;
+	isArchived: boolean;
+	isRead: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -35,8 +37,10 @@ export interface ApiConfig {
 
 export interface ConfigResponse {
 	configured: boolean;
-	apiUrl?: string;
+	apiUrl: string | null;
+	logLevel: string;
 }
+
 
 export interface ImportResult {
 	imported: number;

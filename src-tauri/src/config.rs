@@ -17,11 +17,17 @@ pub enum ConfigError {
 pub struct ApiConfig {
     pub api_url: String,
     pub api_key: String,
+    #[serde(default = "default_log_level")]
+    pub log_level: String,
+}
+
+fn default_log_level() -> String {
+    "info".to_string()
 }
 
 impl ApiConfig {
-    pub fn new(api_url: String, api_key: String) -> Self {
-        Self { api_url, api_key }
+    pub fn new(api_url: String, api_key: String, log_level: String) -> Self {
+        Self { api_url, api_key, log_level }
     }
 }
 

@@ -7,13 +7,24 @@ mod notifications;
 mod tray;
 
 use commands::AppState;
-use std::sync::Mutex;
+use tauri::Manager;
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, ShortcutState};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 fn setup_logging() {
+    let log_level_str = config::ConfigManager::get()
+        .ok()
+        .flatten()
+        .map(|c| c.log_level)
+        .unwrap_or_else(|| "info".to_string());
+
+    let filter = format!("favoritos_app_lib={}", log_level_str);
+
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("favoritos=info".parse().unwrap()))
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive(filter.parse().unwrap()),
+        )
         .init();
 }
 
@@ -26,8 +37,29 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        if shortcut.matches(Modifiers::ALT, Code::Space) {
+                            if let Some(window) = app.get_webview_window("search") {
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
+                                } else {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                        }
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             info!("Setting up application...");
+
+            // Register global shortcut
+            app.global_shortcut().register("Alt+Space")?;
 
             // Initialize favicon cache
             let cache_dir = app
@@ -38,7 +70,7 @@ pub fn run() {
             let favicon_cache = cache::FaviconCache::new(cache_dir);
 
             app.manage(AppState {
-                favicon_cache: Mutex::new(Some(favicon_cache)),
+                favicon_cache: tokio::sync::Mutex::new(Some(favicon_cache)),
             });
 
             // Setup system tray
@@ -80,6 +112,15 @@ pub fn run() {
             // Import commands
             commands::import_favorites,
         ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // For the main window, we want to hide it instead of closing
+                if window.label() == "main" {
+                    window.hide().unwrap();
+                    api.prevent_close();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
