@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+	--radius: 0.5rem;
+
+	/* Custom colors from constitution */
+	--color-taupe: #483C32;
+	--color-grey-olive: #A9A9A1;
+	--color-silver: #C0C0C0;
+	--color-parchment: #F5F5DC;
+	--color-powder-blush: #E6E6FA;
+
+	/* Shadcn-Svelte CSS variables */
+	--background: var(--color-taupe);
+	--foreground: var(--color-parchment);
+	--card: #524840;
+	--card-foreground: var(--color-parchment);
+	--popover: var(--color-taupe);
+	--popover-foreground: var(--color-parchment);
+	--primary: var(--color-silver);
+	--primary-foreground: var(--color-taupe);
+	--secondary: #5c544c;
+	--secondary-foreground: var(--color-parchment);
+	--muted: #5c544c;
+	--muted-foreground: var(--color-grey-olive);
+	--accent: var(--color-powder-blush);
+	--accent-foreground: var(--color-taupe);
+	--destructive: #dc2626;
+	--destructive-foreground: var(--color-parchment);
+	--border: #5c544c;
+	--input: #5c544c;
+	--ring: var(--color-silver);
+}
+
+body {
+	background-color: var(--background);
+	color: var(--foreground);
+	font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-taupe);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-grey-olive);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-silver);
+}

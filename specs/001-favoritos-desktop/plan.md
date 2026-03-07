@@ -19,8 +19,9 @@ Construir una aplicación de escritorio nativa que consume la API REST de Favori
 
 **Storage**:
 - API Key y Base URL: Tauri password store (seguro)
+- Favoritos (lista): IndexedDB (para lectura offline)
 - Configuración general: localStorage o Tauri store
-- Caché de favicons: Tauri temp dir
+- Caché de favicons: Tauri app data dir (persistente)
 
 **Testing**: Vitest (Frontend), cargo test (Rust backend)
 
@@ -33,11 +34,12 @@ Construir una aplicación de escritorio nativa que consume la API REST de Favori
 - Apertura búsqueda global: <200ms
 - Carga inicial (100 items): <3s
 - Memoria idle: <100MB
+- Escala: Hasta 10,000 favoritos (manteniendo 60fps)
 
 **Constraints**:
 - Sin modo claro/oscuro (paleta fija)
 - Separación estricta frontend/backend
-- Offline: lectura de datos ya cargados
+- Offline: lectura de datos ya cargados via IndexedDB
 - Atajos de teclado obligatorios
 
 **Scale/Scope**:

@@ -61,6 +61,10 @@
 - [X] **T016** Crear servicio `tauri.ts` en `src/lib/services/` como wrapper de comandos IPC
 - [X] **T017** Crear servicio `favicons.ts` en `src/lib/services/` para gestión de caché de favicons
 
+### Base de Datos Local
+
+- [ ] **T018a** [P] Crear servicio `database.ts` en `src/lib/services/` para persistencia en IndexedDB (caché de lista de favoritos para modo offline)
+
 ### Tipos Compartidos
 
 - [X] **T018** Crear `types/api.ts` en `src/lib/types/` con interfaces TypeScript de entidades (Favorito, Carpeta, Etiqueta, etc.)
@@ -139,10 +143,11 @@
 
 ### Frontend Implementation for US2
 
-- [ ] **T050** [P] [US2] Crear store `favoritos.ts` en `src/lib/stores/` con estado de favoritos
-- [ ] **T051** [P] [US2] Crear componente `FavoritoCard.svelte` en `src/lib/components/favoritos/` con icono, título, dominio, tags
+- [ ] **T050** [P] [US2] Crear store `favoritos.ts` en `src/lib/stores/` con lógica de sincronización API ↔ IndexedDB para modo offline
+- [ ] **T051** [P] [US2] Crear componente `FavoritoCard.svelte` en `src/lib/components/favoritos/` con manejo de clic para llamar a `favorites_visit` (incrementar contador y abrir URL)
 - [ ] **T052** [P] [US2] Crear componente `FavoritoGrid.svelte` en `src/lib/components/favoritos/` con layout de grid
 - [ ] **T053** [P] [US2] Crear componente `FavoritoDialog.svelte` en `src/lib/components/favoritos/` para crear/editar
+- [ ] **T053a** [US2] Crear componente `DeleteConfirmDialog.svelte` en `src/lib/components/favoritos/` para confirmación de borrado
 - [ ] **T054** [P] [US2] Crear componente `FolderSelector.svelte` en `src/lib/components/favoritos/` con opción "[+] Nueva Carpeta"
 - [ ] **T055** [P] [US2] Crear componente `TagInput.svelte` en `src/lib/components/favoritos/` para crear tags con Enter
 - [ ] **T056** [US2] Implementar lazy loading en `FavoritoGrid.svelte` con Intersection Observer
@@ -179,7 +184,7 @@
 
 - [ ] **T074** [P] [US3] Crear componente `BuscadorGlobal.svelte` en `src/lib/components/favoritos/` usando Shadcn Command
 - [ ] **T075** [US3] Crear página `+page.svelte` en `src/routes/busqueda-global/` para ventana de búsqueda
-- [ ] **T076** [US3] Implementar filtrado local en `BuscadorGlobal.svelte` con debouncing de 300ms
+- [ ] **T076** [US3] Implementar filtrado local instantáneo (<50ms) en `BuscadorGlobal.svelte` (sin debounce o <50ms para búsqueda en memoria)
 - [ ] **T077** [US3] Configurar ventana de búsqueda en `src-tauri/tauri.conf.json` (sin decoraciones, always on top)
 - [ ] **T078** [US3] Implementar atajo global `Alt+Space` en `src-tauri/src/` para abrir búsqueda
 - [ ] **T079** [US3] Implementar apertura de favorito con Enter en `BuscadorGlobal.svelte`
