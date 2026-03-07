@@ -190,3 +190,4 @@ src-tauri/src/
 - Plan: `specs/001-favoritos-desktop/plan.md`
 - Tareas: `specs/001-favoritos-desktop/tasks.md`
 - Historias: `historias.md`
+- Normas para Agentes: `CLAUDE.md`, `GEMINI.md`, `AGENT_GUIDELINES.md`
