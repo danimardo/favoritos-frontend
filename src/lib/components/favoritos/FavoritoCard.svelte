@@ -44,7 +44,10 @@
 	}
 </script>
 
-<Card.Root class="group hover:shadow-md transition-shadow bg-white border-silver/50 overflow-hidden">
+<Card.Root 
+	class="group hover:shadow-md transition-shadow bg-white border-silver/50 overflow-hidden cursor-default select-none"
+	ondblclick={() => showEditDialog = true}
+>
 	<Card.Header class="p-4 pb-2">
 		<div class="flex justify-between items-start gap-2">
 			{#if faviconUrl || favorito.faviconUrl}
@@ -79,15 +82,22 @@
 		</div>
 	</Card.Header>
 	<Card.Content class="p-4 pt-0">
-		<button onclick={handleVisit} class="text-xs text-silver hover:text-taupe break-all line-clamp-1 text-left w-full">
+		<button 
+			onclick={handleVisit} 
+			class="text-[11px] text-greyOlive hover:text-taupe hover:underline break-all line-clamp-1 text-left w-full transition-colors duration-200"
+			title={favorito.url}
+		>
 			{favorito.url}
 		</button>
 		{#if favorito.tags && favorito.tags.length > 0}
 			<div class="flex flex-wrap gap-1 mt-2">
 				{#each favorito.tags as tag}
-					<span class="px-1.5 py-0.5 rounded bg-silver/20 text-[10px] text-taupe border border-silver/30">
-						{tag}
-					</span>
+					<button 
+						onclick={(e) => { e.stopPropagation(); favoritos.setSearchQuery(typeof tag === 'string' ? tag : tag.name); }}
+						class="px-1.5 py-0.5 rounded bg-silver/20 text-[10px] text-taupe border border-silver/30 hover:bg-taupe hover:text-parchment transition-colors"
+					>
+						{typeof tag === 'string' ? tag : tag.name}
+					</button>
 				{/each}
 			</div>
 		{/if}

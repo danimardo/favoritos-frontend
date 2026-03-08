@@ -8,7 +8,8 @@ use tracing::info;
 
 pub fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let open_item = MenuItem::with_id(app, "open", "Abrir", true, None::<&str>)?;
-    let new_favorite_item = MenuItem::with_id(app, "new_favorite", "Nuevo Favorito", true, None::<&str>)?;
+    let new_favorite_item =
+        MenuItem::with_id(app, "new_favorite", "Nuevo Favorito", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "Salir", true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&open_item, &new_favorite_item, &quit_item])?;
@@ -37,6 +38,8 @@ pub fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 }
                 "quit" => {
                     info!("Tray menu: Quit clicked");
+                    use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+                    let _ = app.save_window_state(StateFlags::all());
                     app.exit(0);
                 }
                 _ => {}

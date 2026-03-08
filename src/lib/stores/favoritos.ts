@@ -3,6 +3,7 @@ import type { Favorito, FavoritoInput, FavoritoUpdate, Carpeta } from '$lib/type
 import { databaseService } from '$lib/services/database';
 import { apiClient } from '$lib/services/api-client';
 import { tauriNotifications } from '$lib/services/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface FavoritosState {
 	items: Favorito[];
@@ -13,6 +14,7 @@ interface FavoritosState {
 	hasMore: boolean;
 	selectedFolderId: string | null;
 	viewMode: 'grid' | 'list';
+	searchQuery: string;
 }
 
 const initialState: FavoritosState = {
@@ -23,7 +25,8 @@ const initialState: FavoritosState = {
 	page: 1,
 	hasMore: true,
 	selectedFolderId: null,
-	viewMode: 'grid'
+	viewMode: 'grid',
+	searchQuery: ''
 };
 
 function createFavoritosStore() {
@@ -35,13 +38,11 @@ function createFavoritosStore() {
 		async fetchAll() {
 			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
 			try {
-				// Cargar favoritos y carpetas en paralelo
 				const [allItems, folders] = await Promise.all([
-					apiClient.getFavorites(1),
+					apiClient.getFavorites(1, 100),
 					apiClient.getFolders()
 				]);
 
-				// FR-021: Ignore isArchived and isRead in frontend
 				const items = allItems.filter(item => !item.isArchived && !item.isRead);
 				
 				update((s) => ({ 
@@ -49,15 +50,12 @@ function createFavoritosStore() {
 					items, 
 					folders,
 					loading: false, 
-					hasMore: allItems.length >= 50 
+					hasMore: allItems.length >= 100 
 				}));
 				
-				// Sync to local DB
 				await databaseService.saveFavoritos(items);
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				
-				// If offline or error, try to load from local DB
 				const localItems = await databaseService.getAllFavoritos();
 				if (localItems.length > 0) {
 					update((s) => ({ ...s, items: localItems, loading: false, error: null, hasMore: false }));
@@ -75,7 +73,7 @@ function createFavoritosStore() {
 			update((s) => ({ ...s, loading: true }));
 			try {
 				const nextPage = state.page + 1;
-				const allNewItems = await apiClient.getFavorites(nextPage);
+				const allNewItems = await apiClient.getFavorites(nextPage, 100);
 				const newItems = allNewItems.filter(item => !item.isArchived && !item.isRead);
 				
 				update((s) => ({
@@ -83,15 +81,11 @@ function createFavoritosStore() {
 					items: [...s.items, ...newItems],
 					page: nextPage,
 					loading: false,
-					hasMore: allNewItems.length >= 50
+					hasMore: allNewItems.length >= 100
 				}));
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({
-					...s,
-					loading: false,
-					error: errorMsg
-				}));
+				update((s) => ({ ...s, loading: false, error: errorMsg }));
 				await tauriNotifications.showError(`Error de conexión (página ${state.page + 1}): ${errorMsg}`);
 			}
 		},
@@ -108,11 +102,7 @@ function createFavoritosStore() {
 				return newItem;
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({
-					...s,
-					loading: false,
-					error: errorMsg
-				}));
+				update((s) => ({ ...s, loading: false, error: errorMsg }));
 				await tauriNotifications.showError(`Error al crear favorito: ${errorMsg}`);
 				throw error;
 			}
@@ -130,11 +120,7 @@ function createFavoritosStore() {
 				return updatedItem;
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({
-					...s,
-					loading: false,
-					error: errorMsg
-				}));
+				update((s) => ({ ...s, loading: false, error: errorMsg }));
 				await tauriNotifications.showError(`Error al actualizar favorito: ${errorMsg}`);
 				throw error;
 			}
@@ -151,18 +137,78 @@ function createFavoritosStore() {
 				}));
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({
-					...s,
-					loading: false,
-					error: errorMsg
-				}));
+				update((s) => ({ ...s, loading: false, error: errorMsg }));
 				await tauriNotifications.showError(`Error al eliminar favorito: ${errorMsg}`);
 				throw error;
 			}
 		},
 
+		async exportAll() {
+			console.log('[Export] Iniciando exportación total...');
+			update((s) => ({ ...s, loading: true }));
+			
+			try {
+				let allExport: any[] = [];
+				let currentPage = 1;
+				let hasMore = true;
+
+				while (hasMore) {
+					console.log(`[Export] Solicitando página ${currentPage} (pageSize: 100)...`);
+					const pageItems = await apiClient.getFavorites(currentPage, 100);
+					console.log(`[Export] Recibidos ${pageItems.length} elementos`);
+
+					if (!pageItems || pageItems.length === 0) {
+						hasMore = false;
+					} else {
+						allExport = [...allExport, ...pageItems];
+						if (pageItems.length < 100) {
+							hasMore = false;
+						} else {
+							currentPage++;
+						}
+					}
+				}
+
+				if (allExport.length === 0) {
+					throw new Error("No hay favoritos para exportar.");
+				}
+
+				console.log(`[Export] Total recolectado: ${allExport.length} favoritos. Normalizando...`);
+
+				const bookmarks = allExport.map(item => ({
+					url: item.url,
+					title: item.title || "Sin título",
+					description: item.description || "",
+					notes: item.notes || "",
+					folder: item.folder?.name || "",
+					tags: item.tags?.map((t: any) => typeof t === 'string' ? t : t.name) || []
+				}));
+
+				const exportData = { bookmarks };
+				const jsonString = JSON.stringify(exportData, null, 2);
+
+				console.log('[Export] Abriendo diálogo de guardado...');
+				const saved = await invoke<boolean>('favorites_export', { jsonData: jsonString });
+				
+				console.log('[Export] Diálogo cerrado. Guardado:', saved);
+				if (saved) {
+					await tauriNotifications.showSuccess("Exportación completada con éxito");
+				}
+			} catch (error) {
+				console.error('[Export Error]', error);
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				await tauriNotifications.showError(`Error al exportar: ${errorMsg}`);
+			} finally {
+				update((s) => ({ ...s, loading: false }));
+			}
+		},
+
 		selectFolder(folderId: string | null) {
 			update((s) => ({ ...s, selectedFolderId: folderId }));
+		},
+
+		setSearchQuery(query: string) {
+			update((s) => ({ ...s, searchQuery: query }));
 		},
 
 		setViewMode(mode: 'grid' | 'list') {

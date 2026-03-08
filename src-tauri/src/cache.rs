@@ -73,7 +73,10 @@ impl FaviconCache {
 
         // Try to fetch favicon from multiple sources
         let favicon_urls = vec![
-            format!("https://www.google.com/s2/favicons?domain={}&sz=128", domain),
+            format!(
+                "https://www.google.com/s2/favicons?domain={}&sz=128",
+                domain
+            ),
             format!("https://{}/favicon.ico", domain),
         ];
 
@@ -94,7 +97,9 @@ impl FaviconCache {
             }
         }
 
-        Err(CacheError::Image("Failed to fetch favicon from any source".to_string()))
+        Err(CacheError::Image(
+            "Failed to fetch favicon from any source".to_string(),
+        ))
     }
 
     async fn fetch_favicon(

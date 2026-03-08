@@ -18,9 +18,7 @@ fn setup_logging() {
     let filter = format!("favoritos_app_lib={}", log_level_str);
 
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env().add_directive(filter.parse().unwrap()),
-        )
+        .with_env_filter(EnvFilter::from_default_env().add_directive(filter.parse().unwrap()))
         .init();
 }
 
@@ -30,6 +28,8 @@ pub fn run() {
     info!("Starting Favoritos Desktop application");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
@@ -102,6 +102,7 @@ pub fn run() {
             commands::metadata_fetch,
             commands::favorites_visit,
             commands::favorites_open_url,
+            commands::favorites_export,
             // Folder commands
             commands::folders_get,
             commands::folders_create,

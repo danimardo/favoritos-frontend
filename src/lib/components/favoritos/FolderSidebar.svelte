@@ -36,10 +36,9 @@
 		<!-- Opción Todos -->
 		<button
 			onclick={() => selectFolder(null)}
-			class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === null ? 'bg-white/10 text-white font-bold' : 'hover:bg-white/5 text-parchment/70'}"
+			class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === null ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
 		>
 			<div class="flex items-center gap-3">
-				<!-- Color del icono corregido: powderBlush si está activo, greyOlive si no -->
 				<LayoutGrid class="w-4 h-4 {$favoritos.selectedFolderId === null ? 'text-powderBlush' : 'text-greyOlive group-hover:text-parchment'}" />
 				<span class="text-sm">Todos</span>
 			</div>
@@ -55,7 +54,7 @@
 		{#each $favoritos.folders as folder}
 			<button
 				onclick={() => selectFolder(folder.id)}
-				class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === folder.id ? 'bg-white/10 text-white font-bold' : 'hover:bg-white/5 text-parchment/70'}"
+				class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === folder.id ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
 			>
 				<div class="flex items-center gap-3">
 					{#if $favoritos.selectedFolderId === folder.id}

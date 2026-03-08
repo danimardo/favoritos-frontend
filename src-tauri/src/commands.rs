@@ -26,7 +26,9 @@ pub fn config_get(app: AppHandle) -> Result<ConfigResponse, String> {
     Ok(ConfigResponse {
         configured: config.is_some(),
         api_url: config.as_ref().map(|c| c.api_url.clone()),
-        log_level: config.map(|c| c.log_level).unwrap_or_else(|| "info".to_string()),
+        log_level: config
+            .map(|c| c.log_level)
+            .unwrap_or_else(|| "info".to_string()),
     })
 }
 
@@ -47,13 +49,14 @@ pub fn config_update_settings(
     api_url: String,
     log_level: String,
 ) -> Result<(), String> {
-    let mut config = ConfigManager::get(&app)
-        .ok_or_else(|| "No existe configuración previa. Debes iniciar sesión primero.".to_string())?;
-    
+    let mut config = ConfigManager::get(&app).ok_or_else(|| {
+        "No existe configuración previa. Debes iniciar sesión primero.".to_string()
+    })?;
+
     // Actualizar los ajustes globales
     config.api_url = api_url;
     config.log_level = log_level;
-    
+
     ConfigManager::save(&app, &config)
 }
 
@@ -75,15 +78,30 @@ pub fn config_clear(app: AppHandle) -> Result<(), String> {
 // ==================== Auth & User Commands ====================
 
 #[tauri::command]
-pub async fn auth_login(api_url: String, email: String, password: String) -> Result<serde_json::Value, String> {
+pub async fn auth_login(
+    api_url: String,
+    email: String,
+    password: String,
+) -> Result<serde_json::Value, String> {
     let client = ApiClient::new(api_url, "".to_string());
-    client.login(&email, &password).await.map_err(|e| e.to_string())
+    client
+        .login(&email, &password)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn auth_register(api_url: String, email: String, password: String, name: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn auth_register(
+    api_url: String,
+    email: String,
+    password: String,
+    name: Option<String>,
+) -> Result<serde_json::Value, String> {
     let client = ApiClient::new(api_url, "".to_string());
-    client.register(&email, &password, name.as_deref()).await.map_err(|e| e.to_string())
+    client
+        .register(&email, &password, name.as_deref())
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -119,14 +137,14 @@ pub async fn favorites_get(
 #[tauri::command]
 pub async fn favorites_get_by_id(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
-    client
-        .get_favorite(&id)
-        .await
-        .map_err(|e| e.to_string())
+    client.get_favorite(&id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn favorites_create(app: AppHandle, favorite: serde_json::Value) -> Result<serde_json::Value, String> {
+pub async fn favorites_create(
+    app: AppHandle,
+    favorite: serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
     client
         .create_favorite(favorite)
@@ -150,19 +168,13 @@ pub async fn favorites_update(
 #[tauri::command]
 pub async fn favorites_delete(app: AppHandle, id: String) -> Result<(), String> {
     let client = get_api_client(&app)?;
-    client
-        .delete_favorite(&id)
-        .await
-        .map_err(|e| e.to_string())
+    client.delete_favorite(&id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn metadata_fetch(app: AppHandle, url: String) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
-    client
-        .fetch_metadata(&url)
-        .await
-        .map_err(|e| e.to_string())
+    client.fetch_metadata(&url).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -183,7 +195,40 @@ pub async fn favorites_visit(app: AppHandle, id: String) -> Result<serde_json::V
 
 #[tauri::command]
 pub fn favorites_open_url(app: AppHandle, url: String) -> Result<(), String> {
-    app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn favorites_export(app: AppHandle, json_data: String) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    tracing::info!("favorites_export command called (sync). JSON size: {} bytes", json_data.len());
+    
+    let file_path = app.dialog()
+        .file()
+        .add_filter("JSON", &["json"])
+        .set_file_name("favoritos_export.json")
+        .set_title("Guardar Exportación de Favoritos")
+        .blocking_save_file();
+
+    match file_path {
+        Some(path) => {
+            let path_str = path.to_string();
+            tracing::info!("Saving export to: {}", path_str);
+            std::fs::write(&path_str, json_data).map_err(|e| {
+                tracing::error!("Failed to write file: {}", e);
+                e.to_string()
+            })?;
+            tracing::info!("Export successful");
+            Ok(true)
+        }
+        None => {
+            tracing::info!("Export cancelled by user");
+            Ok(false)
+        }
+    }
 }
 
 // ==================== Folder Commands ====================
@@ -197,10 +242,7 @@ pub async fn folders_get(app: AppHandle) -> Result<Vec<serde_json::Value>, Strin
 #[tauri::command]
 pub async fn folders_create(app: AppHandle, name: String) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
-    client
-        .create_folder(&name)
-        .await
-        .map_err(|e| e.to_string())
+    client.create_folder(&name).await.map_err(|e| e.to_string())
 }
 
 // ==================== Tag Commands ====================
@@ -212,7 +254,11 @@ pub async fn tags_get(app: AppHandle) -> Result<Vec<serde_json::Value>, String> 
 }
 
 #[tauri::command]
-pub async fn tags_create(app: AppHandle, name: String, color: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn tags_create(
+    app: AppHandle,
+    name: String,
+    color: Option<String>,
+) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
     client
         .create_tag(&name, color.as_deref())
@@ -282,6 +328,8 @@ pub fn app_show_notification(app: AppHandle, title: String, body: String) -> Res
 
 #[tauri::command]
 pub fn app_quit(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+    let _ = app.save_window_state(StateFlags::all());
     app.exit(0);
     Ok(())
 }
@@ -307,13 +355,22 @@ pub async fn import_favorites(app: AppHandle, data: String) -> Result<ImportResu
     match client.create_bookmarks_bulk(payload).await {
         Ok(result_data) => {
             // Map the API response to our ImportResult struct
-            let imported = result_data.get("imported").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
-            let skipped = result_data.get("skipped").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let imported = result_data
+                .get("imported")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as usize;
+            let skipped = result_data
+                .get("skipped")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as usize;
             let mut errors = Vec::new();
-            
+
             if let Some(skipped_urls) = result_data.get("skippedUrls").and_then(|v| v.as_array()) {
                 for url in skipped_urls {
-                    errors.push(format!("Saltado: {}", url.as_str().unwrap_or("URL desconocida")));
+                    errors.push(format!(
+                        "Saltado: {}",
+                        url.as_str().unwrap_or("URL desconocida")
+                    ));
                 }
             }
 
@@ -322,7 +379,10 @@ pub async fn import_favorites(app: AppHandle, data: String) -> Result<ImportResu
                 skipped,
                 errors,
             })
-        },
-        Err(e) => Err(format!("Error en el servidor durante la importación: {}", e)),
+        }
+        Err(e) => Err(format!(
+            "Error en el servidor durante la importación: {}",
+            e
+        )),
     }
 }

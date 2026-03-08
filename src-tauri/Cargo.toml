@@ -1,6 +1,6 @@
 [package]
 name = "favoritos-frontend"
-version = "0.3.0"
+version = "0.3.1"
 description = "Favoritos Desktop - A native desktop app for managing favorites"
 authors = ["you"]
 edition = "2021"
@@ -33,6 +33,8 @@ urlencoding = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 
 [features]
 default = ["custom-protocol"]

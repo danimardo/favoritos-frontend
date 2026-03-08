@@ -169,7 +169,8 @@ impl ApiClient {
             params.push(format!("page={}", p));
         }
         if let Some(l) = limit {
-            params.push(format!("limit={}", l));
+            // USAMOS pageSize SEGÚN EL API REAL
+            params.push(format!("pageSize={}", l));
         }
 
         if !params.is_empty() {
@@ -197,9 +198,11 @@ impl ApiClient {
             }
             Ok(Vec::new())
         } else {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
             Err(ApiError::Message(format!(
-                "Failed to get favorites: {}",
-                response.status()
+                "Failed to get favorites: {} - {}",
+                status, error_text
             )))
         }
     }

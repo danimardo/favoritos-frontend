@@ -1,8 +1,8 @@
 // Config module - Reliable configuration management using tauri-plugin-store
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri_plugin_store::{StoreBuilder, StoreExt};
 use tauri::{AppHandle, Wry};
+use tauri_plugin_store::{StoreBuilder, StoreExt};
 
 const CONFIG_FILE: &str = "settings.bin";
 
@@ -28,7 +28,9 @@ impl ApiConfig {
     }
 
     fn decrypt_key(encrypted: &str) -> String {
-        urlencoding::decode(encrypted).unwrap_or_default().to_string()
+        urlencoding::decode(encrypted)
+            .unwrap_or_default()
+            .to_string()
     }
 }
 
@@ -36,23 +38,28 @@ pub struct ConfigManager;
 
 impl ConfigManager {
     /// Internal helper to ensure store is loaded and available
-    fn get_or_load_store(app: &AppHandle) -> Result<std::sync::Arc<tauri_plugin_store::Store<Wry>>, String> {
+    fn get_or_load_store(
+        app: &AppHandle,
+    ) -> Result<std::sync::Arc<tauri_plugin_store::Store<Wry>>, String> {
         let path = PathBuf::from(CONFIG_FILE);
         if let Some(store) = app.get_store(&path) {
             Ok(store)
         } else {
             // Load it if not in memory
-            StoreBuilder::new(app, path).build().map_err(|e| e.to_string())
+            StoreBuilder::new(app, path)
+                .build()
+                .map_err(|e| e.to_string())
         }
     }
 
     pub fn get(app: &AppHandle) -> Option<ApiConfig> {
         tracing::info!("Recuperando configuración del Store...");
         let store = Self::get_or_load_store(app).ok()?;
-        
+
         let api_url = store.get("api_url")?.as_str()?.to_string();
         let api_key_enc = store.get("api_key")?.as_str()?.to_string();
-        let log_level = store.get("log_level")
+        let log_level = store
+            .get("log_level")
             .and_then(|v| v.as_str().map(|s| s.to_string()))
             .unwrap_or_else(|| "info".to_string());
 
@@ -73,7 +80,7 @@ impl ConfigManager {
         store.set("log_level", serde_json::json!(config.log_level));
 
         store.save().map_err(|e| e.to_string())?;
-        
+
         tracing::info!("Configuración persistida correctamente");
         Ok(())
     }
@@ -91,11 +98,12 @@ impl ConfigManager {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
         path.push("favoritos-desktop");
         path.push(CONFIG_FILE);
-        
+
         if path.exists() {
             if let Ok(content) = std::fs::read_to_string(path) {
                 if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                    return json.get("log_level")
+                    return json
+                        .get("log_level")
                         .and_then(|v| v.as_str())
                         .unwrap_or("info")
                         .to_string();
