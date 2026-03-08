@@ -30,26 +30,40 @@
 
 		loading = true;
 		error = null;
+		result = null;
 
 		try {
 			const text = await file.text();
 			
-			// Basic client-side validation
-			const data = JSON.parse(text);
-			if (!Array.isArray(data)) {
-				throw new Error('El archivo debe ser un array de favoritos.');
+			// Client-side validation for better feedback
+			let data;
+			try {
+				data = JSON.parse(text);
+			} catch (e) {
+				throw new Error('El archivo no es un JSON válido.');
 			}
 
-			const importResult = await invoke('import_favorites', { data: text }) as any;
+			if (!Array.isArray(data) && (!data.bookmarks || !Array.isArray(data.bookmarks))) {
+				throw new Error('Formato inválido. El JSON debe ser un array o un objeto con la propiedad "bookmarks".');
+			}
+
+			// Pre-process if it's an array to match the bulk API format { bookmarks: [...] }
+			const payload = Array.isArray(data) ? { bookmarks: data } : data;
+			const payloadString = JSON.stringify(payload);
+
+			console.log('[Import] Enviando datos masivos...');
+			const importResult = await invoke('import_favorites', { data: payloadString }) as any;
 			result = importResult;
 			
 			if (result && result.imported > 0) {
 				await favoritos.fetchAll(); // Refresh list
 				await tauriNotifications.showSuccess(`Importación completada: ${result.imported} favoritos añadidos.`);
+			} else if (result && result.imported === 0) {
+				error = "No se importó ningún marcador. Revisa si ya existen o si hay errores.";
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error al importar el archivo.';
-			console.error(e);
+			console.error('[Import Error]', e);
 		} finally {
 			loading = false;
 		}
@@ -64,13 +78,13 @@
 </script>
 
 <Dialog.Root bind:open onOpenChange={(o) => !o && reset()}>
-	<Dialog.Content class="sm:max-w-[425px] bg-parchment border-taupe">
+	<Dialog.Content class="sm:max-w-[425px] bg-white border-2 border-taupe/20 shadow-2xl z-[100] opacity-100">
 		<Dialog.Header>
-			<Dialog.Title class="text-taupe flex items-center gap-2">
-				<FileJson class="h-5 w-5" />
+			<Dialog.Title class="text-taupe flex items-center gap-2 font-bold text-xl">
+				<FileJson class="h-6 w-6" />
 				Importar Favoritos
 			</Dialog.Title>
-			<Dialog.Description class="text-grey-olive">
+			<Dialog.Description class="text-greyOlive">
 				Sube un archivo JSON con tu colección de favoritos para importarlos masivamente.
 			</Dialog.Description>
 		</Dialog.Header>
@@ -78,17 +92,22 @@
 		<div class="grid gap-4 py-4">
 			{#if !result}
 				<div class="grid w-full items-center gap-1.5">
-					<Label for="json-file" class="text-taupe">Archivo JSON</Label>
+					<Label for="json-file" class="text-taupe font-semibold">Archivo JSON</Label>
 					<div 
-						class="flex flex-col items-center justify-center border-2 border-dashed border-silver rounded-lg p-6 bg-taupe/5 hover:bg-taupe/10 transition-colors cursor-pointer"
+						class="flex flex-col items-center justify-center border-2 border-dashed border-silver rounded-xl p-8 bg-silver/5 hover:bg-taupe/5 hover:border-taupe/50 transition-all cursor-pointer group"
 						onclick={() => fileInput?.click()}
 						onkeydown={(e) => e.key === 'Enter' && fileInput?.click()}
 						role="button"
 						tabindex="0"
 					>
-						<Upload class="h-8 w-8 text-grey-olive mb-2" />
-						<p class="text-sm text-grey-olive">
-							{file ? file.name : 'Haz clic para seleccionar o arrastra el archivo'}
+						<div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
+							<Upload class="h-8 w-8 text-taupe" />
+						</div>
+						<p class="text-sm text-taupe font-medium text-center">
+							{file ? file.name : 'Haz clic para seleccionar archivo'}
+						</p>
+						<p class="text-[10px] text-grey-olive mt-1">
+							Solo se admiten archivos .json
 						</p>
 						<input
 							id="json-file"
@@ -100,38 +119,35 @@
 						/>
 					</div>
 					{#if error}
-						<p class="text-xs text-red-500 mt-1 flex items-center gap-1">
-							<AlertCircle class="h-3 w-3" />
-							{error}
-						</p>
+						<div class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 mt-2 flex items-start gap-2 shadow-sm">
+							<AlertCircle class="h-4 w-4 shrink-0 mt-0.5" />
+							<span class="leading-tight font-medium">{error}</span>
+						</div>
 					{/if}
 				</div>
 			{:else}
-				<div class="bg-taupe/5 rounded-lg p-4 space-y-3">
-					<div class="flex items-center gap-2 text-green-600 font-medium">
-						<CheckCircle2 class="h-5 w-5" />
+				<div class="bg-silver/10 rounded-xl p-5 space-y-4 border border-silver/30">
+					<div class="flex items-center gap-2 text-green-600 font-bold">
+						<CheckCircle2 class="h-6 w-6" />
 						Importación finalizada
 					</div>
 					<div class="grid grid-cols-2 gap-4 text-sm">
-						<div class="bg-white/50 p-2 rounded border border-silver">
-							<p class="text-grey-olive">Importados</p>
-							<p class="text-2xl font-bold text-taupe">{result.imported}</p>
+						<div class="bg-white p-3 rounded-lg border border-silver/50 shadow-sm text-center">
+							<p class="text-[10px] text-grey-olive uppercase tracking-wider font-bold">Importados</p>
+							<p class="text-3xl font-black text-taupe">{result.imported}</p>
 						</div>
-						<div class="bg-white/50 p-2 rounded border border-silver">
-							<p class="text-grey-olive">Saltados/Error</p>
-							<p class="text-2xl font-bold text-taupe">{result.skipped}</p>
+						<div class="bg-white p-3 rounded-lg border border-silver/50 shadow-sm text-center">
+							<p class="text-[10px] text-grey-olive uppercase tracking-wider font-bold">Omitidos</p>
+							<p class="text-3xl font-black text-red-400">{result.skipped}</p>
 						</div>
 					</div>
 					{#if result.errors.length > 0}
-						<div class="max-h-24 overflow-y-auto mt-2">
-							<p class="text-xs font-semibold text-taupe mb-1">Errores:</p>
-							<ul class="text-[10px] text-red-500 list-disc pl-4">
-								{#each result.errors.slice(0, 5) as err}
+						<div class="bg-white/50 rounded-lg p-3 border border-red-100 shadow-inner">
+							<p class="text-xs font-bold text-red-600 mb-2">Mensajes del servidor:</p>
+							<ul class="text-[10px] text-red-500 list-disc pl-4 space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+								{#each result.errors as err}
 									<li>{err}</li>
 								{/each}
-								{#if result.errors.length > 5}
-									<li>... y {result.errors.length - 5} más</li>
-								{/if}
 							</ul>
 						</div>
 					{/if}
@@ -139,36 +155,46 @@
 			{/if}
 		</div>
 
-		<Dialog.Footer>
+		<Dialog.Footer class="gap-2">
 			{#if !result}
 				<Button 
-					variant="outline" 
+					variant="ghost" 
 					onclick={() => (open = false)}
 					disabled={loading}
-					class="border-taupe text-taupe hover:bg-taupe/10"
+					class="text-grey-olive hover:text-taupe"
 				>
 					Cancelar
 				</Button>
 				<Button 
 					onclick={startImport} 
 					disabled={!file || loading}
-					class="bg-taupe text-parchment hover:bg-taupe/90"
+					class="bg-taupe text-parchment hover:bg-taupe/90 font-bold shadow-md px-6 min-w-[140px]"
 				>
 					{#if loading}
 						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 						Importando...
 					{:else}
-						Empezar Importación
+						Importar ahora
 					{/if}
 				</Button>
 			{:else}
 				<Button 
-					onclick={() => (open = false)}
-					class="bg-taupe text-parchment hover:bg-taupe/90 w-full"
+					onclick={() => { open = false; reset(); }}
+					class="bg-taupe text-parchment hover:bg-taupe/90 w-full font-bold h-11 shadow-md"
 				>
-					Cerrar
+					Finalizar
 				</Button>
 			{/if}
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<style>
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 4px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: #C0C0C0;
+		border-radius: 4px;
+	}
+</style>

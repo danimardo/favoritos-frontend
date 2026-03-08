@@ -11,12 +11,16 @@
 	let gridComponent = $state<any>(null);
 
 	onMount(() => {
-		if ($isConfigured) {
-			favoritos.fetchAll();
-		}
-
 		window.addEventListener('keydown', handleKeydown);
 		return () => window.removeEventListener('keydown', handleKeydown);
+	});
+
+	// Efecto reactivo: cuando estemos configurados y listos, cargamos los favoritos
+	$effect(() => {
+		if ($isConfigured) {
+			console.log('[HomePage] App configurada, cargando favoritos...');
+			favoritos.fetchAll();
+		}
 	});
 
 	function handleKeydown(e: KeyboardEvent) {

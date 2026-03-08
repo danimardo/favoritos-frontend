@@ -143,7 +143,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-010**: La aplicación DEBE cachear favicons localmente para evitar peticiones repetitivas.
 - **FR-011**: La aplicación DEBE mostrar los favoritos en un grid de tarjetas.
 - **FR-012**: La aplicación DEBE implementar lazy loading.
-- **FR-013**: La aplicación DEBE filtrar localmente los favoritos en la búsqueda.
+- **FR-013**: La aplicación DEBE filtrar localmente los favoritos en la búsqueda, incluyendo los campos: Título, URL, Descripción, Etiquetas, Carpeta y Notas Personales.
 - **FR-014**: La aplicación DEBE incrementar el contador de visitas al abrir un favorito.
 - **FR-015**: La aplicación DEBE responder al atajo `Alt+Space` abriendo la búsqueda global.
 - **FR-016**: La aplicación DEBE mantener el icono en el System Tray.
@@ -152,7 +152,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-019**: La aplicación DEBE enviar notificaciones nativas para errores críticos.
 - **FR-020**: La aplicación DEBE enviar notificaciones nativas al completar importación.
 - **FR-021**: La aplicación DEBE ignorar los campos `isArchived` e `isRead` en el frontend.
-- **FR-022**: La aplicación DEBE permitir importar favoritos desde archivos JSON asociados al usuario actual.
+- **FR-022**: La aplicación DEBE permitir importar favoritos de forma masiva utilizando el endpoint `/bookmarks/bulk`, soportando tanto arrays de objetos como el formato oficial `{ bookmarks: [] }`.
 - **FR-023**: La aplicación DEBE mostrar notificación con resumen tras importación.
 - **FR-024**: La aplicación DEBE mantener la paleta de colores fija.
 - **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `Ctrl+F` (buscar), `Ctrl+,` (perfil), `Ctrl+Q` (salir), `Esc` (cerrar/minimizar).
@@ -162,7 +162,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 ### Key Entities
 
 - **Usuario**: Entidad principal que representa al dueño de los datos. Atributos: Email, Nombre, ID único.
-- **Favorito**: Representa un enlace guardado por el usuario. Atributos: URL, título, descripción, dominio, favicon, etiquetas, carpeta, contador de visitas.
+- **Favorito**: Representa un enlace guardado por el usuario. Atributos: URL, título, descripción, notas personales, dominio, favicon, etiquetas, carpeta, contador de visitas.
 - **Carpeta**: Agrupa favoritos. Atributos: nombre, orden/posición.
 - **Etiqueta**: Clasificación flexible de favoritos.
 - **Sesión**: Almacena las credenciales de conexión activas. Atributos: API URL, API Key dinámica, Usuario actual.

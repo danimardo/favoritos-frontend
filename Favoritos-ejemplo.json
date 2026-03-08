@@ -1,0 +1,244 @@
+{
+  "bookmarks": [
+  {
+    "url": "https://www.google.com",
+    "title": "Google",
+    "description": "El buscador más usado del mundo",
+    "notes": "Búsquedas generales, Google Maps, Google Images",
+    "folder": "Búsqueda",
+    "tags": ["web", "search", "google"]
+  },
+  {
+    "url": "https://www.bing.com",
+    "title": "Bing",
+    "description": "Buscador de Microsoft",
+    "notes": "Alternativa a Google, integrado con IA Copilot",
+    "folder": "Búsqueda",
+    "tags": ["web", "search", "microsoft"]
+  },
+  {
+    "url": "https://www.duckduckgo.com",
+    "title": "DuckDuckGo",
+    "description": "Buscador privado sin rastreo",
+    "notes": "Ideal para búsquedas anónimas",
+    "folder": "Búsqueda",
+    "tags": ["web", "search", "privacidad"]
+  },
+  {
+    "url": "https://www.youtube.com",
+    "title": "YouTube",
+    "description": "La mayor plataforma de vídeo del mundo",
+    "notes": "Tutoriales, música, entretenimiento y directos",
+    "folder": "Entretenimiento",
+    "tags": ["video", "streaming", "google"]
+  },
+  {
+    "url": "https://www.netflix.com",
+    "title": "Netflix",
+    "description": "Plataforma de streaming de series y películas",
+    "notes": "Requiere suscripción de pago",
+    "folder": "Entretenimiento",
+    "tags": ["streaming", "series", "peliculas"]
+  },
+  {
+    "url": "https://www.spotify.com",
+    "title": "Spotify",
+    "description": "Plataforma de música y podcasts en streaming",
+    "notes": "Versión gratuita con anuncios, premium sin límites",
+    "folder": "Entretenimiento",
+    "tags": ["musica", "podcasts", "streaming"]
+  },
+  {
+    "url": "https://www.twitch.tv",
+    "title": "Twitch",
+    "description": "Plataforma de streaming en directo",
+    "notes": "Videojuegos, eSports y streams creativos",
+    "folder": "Entretenimiento",
+    "tags": ["streaming", "gaming", "directos"]
+  },
+  {
+    "url": "https://www.facebook.com",
+    "title": "Facebook",
+    "description": "Red social de Meta con más usuarios en el mundo",
+    "notes": "Grupos, marketplace y eventos",
+    "folder": "Redes Sociales",
+    "tags": ["social", "meta", "red-social"]
+  },
+  {
+    "url": "https://www.instagram.com",
+    "title": "Instagram",
+    "description": "Red social de fotos y vídeos cortos",
+    "notes": "Reels, Stories e influencers",
+    "folder": "Redes Sociales",
+    "tags": ["social", "fotos", "meta"]
+  },
+  {
+    "url": "https://www.x.com",
+    "title": "X (Twitter)",
+    "description": "Red social de microblogging",
+    "notes": "Antes llamado Twitter, ahora propiedad de Elon Musk",
+    "folder": "Redes Sociales",
+    "tags": ["social", "noticias", "microblogging"]
+  },
+  {
+    "url": "https://www.linkedin.com",
+    "title": "LinkedIn",
+    "description": "Red social profesional y de empleo",
+    "notes": "Ideal para networking y búsqueda de trabajo",
+    "folder": "Redes Sociales",
+    "tags": ["social", "empleo", "profesional"]
+  },
+  {
+    "url": "https://www.tiktok.com",
+    "title": "TikTok",
+    "description": "Plataforma de vídeos cortos virales",
+    "notes": "Tendencias, humor, música y bailes",
+    "folder": "Redes Sociales",
+    "tags": ["social", "video", "viral"]
+  },
+  {
+    "url": "https://www.reddit.com",
+    "title": "Reddit",
+    "description": "Foros y comunidades sobre cualquier tema",
+    "notes": "Subreddits especializados en miles de temas",
+    "folder": "Redes Sociales",
+    "tags": ["social", "foros", "comunidades"]
+  },
+  {
+    "url": "https://www.github.com",
+    "title": "GitHub",
+    "description": "Plataforma de alojamiento de código con Git",
+    "notes": "Repositorios públicos y privados, Actions, Copilot",
+    "folder": "Desarrollo",
+    "tags": ["git", "code", "dev"]
+  },
+  {
+    "url": "https://stackoverflow.com",
+    "title": "Stack Overflow",
+    "description": "La mayor comunidad de preguntas para desarrolladores",
+    "notes": "Indispensable para resolver dudas de programación",
+    "folder": "Desarrollo",
+    "tags": ["dev", "programacion", "comunidad"]
+  },
+  {
+    "url": "https://developer.mozilla.org",
+    "title": "MDN Web Docs",
+    "description": "Documentación oficial de tecnologías web",
+    "notes": "Referencia de HTML, CSS y JavaScript",
+    "folder": "Desarrollo",
+    "tags": ["dev", "documentacion", "web"]
+  },
+  {
+    "url": "https://www.amazon.com",
+    "title": "Amazon",
+    "description": "Mayor tienda de comercio electrónico del mundo",
+    "notes": "También ofrece AWS, Prime Video y Kindle",
+    "folder": "Compras",
+    "tags": ["ecommerce", "compras", "amazon"]
+  },
+  {
+    "url": "https://www.ebay.com",
+    "title": "eBay",
+    "description": "Plataforma de compraventa entre particulares y empresas",
+    "notes": "Subastas y precio fijo, productos nuevos y de segunda mano",
+    "folder": "Compras",
+    "tags": ["ecommerce", "compras", "subastas"]
+  },
+  {
+    "url": "https://www.aliexpress.com",
+    "title": "AliExpress",
+    "description": "Marketplace de productos chinos a precios bajos",
+    "notes": "Envíos internacionales, tiempos de entrega variables",
+    "folder": "Compras",
+    "tags": ["ecommerce", "compras", "china"]
+  },
+  {
+    "url": "https://www.wikipedia.org",
+    "title": "Wikipedia",
+    "description": "La enciclopedia libre más grande del mundo",
+    "notes": "Disponible en más de 300 idiomas",
+    "folder": "Referencia",
+    "tags": ["enciclopedia", "conocimiento", "wiki"]
+  },
+  {
+    "url": "https://www.wolframalpha.com",
+    "title": "Wolfram Alpha",
+    "description": "Motor de conocimiento computacional",
+    "notes": "Matemáticas, ciencia, estadísticas y más",
+    "folder": "Referencia",
+    "tags": ["matematicas", "ciencia", "calculo"]
+  },
+  {
+    "url": "https://www.bbc.com",
+    "title": "BBC",
+    "description": "Medio de comunicación internacional del Reino Unido",
+    "notes": "Noticias mundiales fiables en inglés",
+    "folder": "Noticias",
+    "tags": ["noticias", "internacional", "media"]
+  },
+  {
+    "url": "https://www.nytimes.com",
+    "title": "The New York Times",
+    "description": "Diario de referencia en EE.UU. y el mundo",
+    "notes": "Requiere suscripción para acceso completo",
+    "folder": "Noticias",
+    "tags": ["noticias", "eeuu", "periodismo"]
+  },
+  {
+    "url": "https://www.elpais.com",
+    "title": "El País",
+    "description": "Diario de referencia en español",
+    "notes": "Cobertura de España y Latinoamérica",
+    "folder": "Noticias",
+    "tags": ["noticias", "espana", "periodismo"]
+  },
+  {
+    "url": "https://chat.openai.com",
+    "title": "ChatGPT",
+    "description": "Asistente de IA de OpenAI",
+    "notes": "GPT-4o disponible, versión gratuita y Plus",
+    "folder": "Inteligencia Artificial",
+    "tags": ["ia", "chatbot", "openai"]
+  },
+  {
+    "url": "https://www.claude.ai",
+    "title": "Claude",
+    "description": "Asistente de IA de Anthropic",
+    "notes": "Muy capaz en razonamiento, escritura y código",
+    "folder": "Inteligencia Artificial",
+    "tags": ["ia", "chatbot", "anthropic"]
+  },
+  {
+    "url": "https://www.notion.so",
+    "title": "Notion",
+    "description": "Herramienta de notas, wikis y gestión de proyectos",
+    "notes": "Todo en uno: bases de datos, documentos y tareas",
+    "folder": "Productividad",
+    "tags": ["productividad", "notas", "gestion"]
+  },
+  {
+    "url": "https://drive.google.com",
+    "title": "Google Drive",
+    "description": "Almacenamiento en la nube de Google",
+    "notes": "15 GB gratuitos, integrado con Docs, Sheets y Slides",
+    "folder": "Productividad",
+    "tags": ["productividad", "nube", "google"]
+  },
+  {
+    "url": "https://www.apple.com",
+    "title": "Apple",
+    "description": "Sitio oficial de Apple: productos y servicios",
+    "notes": "iPhone, Mac, iPad, Apple Watch y más",
+    "folder": "Tecnología",
+    "tags": ["tecnologia", "apple", "hardware"]
+  },
+  {
+    "url": "https://www.microsoft.com",
+    "title": "Microsoft",
+    "description": "Sitio oficial de Microsoft",
+    "notes": "Windows, Office 365, Azure y Surface",
+    "folder": "Tecnología",
+    "tags": ["tecnologia", "microsoft", "software"]
+  }
+  ]
+}

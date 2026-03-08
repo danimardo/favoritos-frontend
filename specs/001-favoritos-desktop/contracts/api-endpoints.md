@@ -390,20 +390,23 @@ POST /tags
 
 ---
 
-### 13. Importar Favoritos
+### 13. Importar Favoritos (Masivo)
+
+Importa múltiples favoritos de una sola vez.
 
 ```http
-POST /import
+POST /bookmarks/bulk
 ```
 
-**Request Body** (formato de archivo):
+**Request Body**:
 ```json
 {
-  "favorites": [
+  "bookmarks": [
     {
       "url": "https://example.com",
       "title": "Ejemplo",
       "description": "Descripción",
+      "notes": "Notas personales",
       "tags": ["tech"],
       "folder": "Work"
     }
@@ -418,10 +421,12 @@ POST /import
   "data": {
     "imported": 85,
     "skipped": 15,
-    "errors": []
+    "skippedUrls": ["https://duplicate.com"]
   }
 }
 ```
+
+**Error 400 Bad Request**: Formato JSON inválido.
 
 ---
 

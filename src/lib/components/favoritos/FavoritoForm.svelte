@@ -15,8 +15,17 @@
 	let title = $state(init?.title || '');
 	let description = $state(init?.description || '');
 	let notes = $state(init?.notes || '');
-	let tags = $state<string[]>(init?.tags || []);
-	let folderId = $state(init?.folder || "");
+	
+	// Normalización: Extraer nombres si son objetos, o usar el array si son strings
+	let tags = $state<string[]>(
+		init?.tags 
+			? init.tags.map(t => typeof t === 'string' ? t : t.name) 
+			: []
+	);
+	
+	// Normalización: Usar folderId si existe, o el id del objeto folder
+	let folderId = $state(init?.folderId || init?.folder?.id || "");
+	
 	let loading = $state(false);
 	let error = $state('');
 
@@ -60,7 +69,7 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-4 max-h-[70vh] overflow-y-auto px-1 pr-2 custom-scrollbar">
+<form onsubmit={handleSubmit} class="space-y-4 max-h-[70vh] overflow-y-auto px-1 pr-2 custom-scrollbar bg-white rounded-lg">
 	<div class="space-y-2">
 		<Label for="fav-url" class="text-taupe font-semibold">URL</Label>
 		<Input 
@@ -70,18 +79,18 @@
 			required 
 			disabled={loading}
 			onblur={fetchMetadata}
-			class="focus:ring-taupe focus:border-taupe"
+			class="focus:ring-taupe focus:border-taupe bg-white"
 		/>
 	</div>
 
 	<div class="space-y-2">
 		<Label for="fav-title" class="text-taupe font-semibold">Título</Label>
-		<Input id="fav-title" bind:value={title} placeholder="Mi sitio favorito" required disabled={loading} class="focus:ring-taupe focus:border-taupe" />
+		<Input id="fav-title" bind:value={title} placeholder="Mi sitio favorito" required disabled={loading} class="focus:ring-taupe focus:border-taupe bg-white" />
 	</div>
 
 	<div class="space-y-2">
 		<Label for="fav-description" class="text-taupe font-semibold">Descripción Corta</Label>
-		<Input id="fav-description" bind:value={description} placeholder="De qué trata este sitio..." disabled={loading} class="focus:ring-taupe focus:border-taupe" />
+		<Input id="fav-description" bind:value={description} placeholder="De qué trata este sitio..." disabled={loading} class="focus:ring-taupe focus:border-taupe bg-white" />
 	</div>
 
 	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

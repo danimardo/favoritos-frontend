@@ -11,17 +11,25 @@
 </script>
 
 <AlertDialog.Root bind:open>
-	<AlertDialog.Content class="bg-parchment">
+	<AlertDialog.Content class="bg-white border-2 border-red-100 shadow-2xl z-[100] opacity-100">
 		<AlertDialog.Header>
-			<AlertDialog.Title>{title}</AlertDialog.Title>
-			<AlertDialog.Description>
+			<AlertDialog.Title class="text-taupe font-bold text-xl">{title}</AlertDialog.Title>
+			<AlertDialog.Description class="text-greyOlive">
 				{description}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={() => open = false}>Cancelar</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={handleConfirm} class="bg-red-600 text-white hover:bg-red-700">
-				Eliminar
+		<AlertDialog.Footer class="gap-2">
+			<AlertDialog.Cancel 
+				onclick={() => open = false}
+				class="border-silver text-taupe hover:bg-silver/10"
+			>
+				Cancelar
+			</AlertDialog.Cancel>
+			<AlertDialog.Action 
+				onclick={handleConfirm} 
+				class="bg-red-600 text-white hover:bg-red-700 font-bold shadow-md px-6"
+			>
+				Eliminar Definitivamente
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

@@ -9,8 +9,16 @@ export interface Favorito {
 	domain: string;
 	faviconUrl?: string;
 	faviconCached?: string;
-	tags?: string[];
-	folder?: string;
+	folderId?: string;
+	folder?: {
+		id: string;
+		name: string;
+	};
+	tags?: {
+		id: string;
+		name: string;
+		color?: string;
+	}[];
 	visitCount: number;
 	isArchived: boolean;
 	isRead: boolean;

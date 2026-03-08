@@ -102,9 +102,9 @@
 />
 
 <Dialog.Root bind:open={showEditDialog}>
-	<Dialog.Content class="bg-parchment">
+	<Dialog.Content class="bg-white border-2 border-taupe/20 shadow-2xl z-[100]">
 		<Dialog.Header>
-			<Dialog.Title>Editar Favorito</Dialog.Title>
+			<Dialog.Title class="text-taupe">Editar Favorito</Dialog.Title>
 		</Dialog.Header>
 		<FavoritoForm initialData={favorito} onSave={() => showEditDialog = false} />
 	</Dialog.Content>

@@ -11,11 +11,31 @@
 	}
 
 	let filteredItems = $derived(
-		$favoritos.items.filter(item => 
-			item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			item.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-		)
+		$favoritos.items.filter(item => {
+			const query = searchQuery.toLowerCase();
+			
+			// Búsqueda en campos básicos
+			const inBasic = 
+				item.title.toLowerCase().includes(query) ||
+				item.url.toLowerCase().includes(query) ||
+				(item.description?.toLowerCase().includes(query) ?? false) ||
+				(item.notes?.toLowerCase().includes(query) ?? false);
+			
+			if (inBasic) return true;
+
+			// Búsqueda en etiquetas (objetos {name})
+			const inTags = item.tags?.some(tag => {
+				const tagName = typeof tag === 'string' ? tag : tag.name;
+				return tagName.toLowerCase().includes(query);
+			}) ?? false;
+
+			if (inTags) return true;
+
+			// Búsqueda en carpeta
+			const inFolder = item.folder?.name.toLowerCase().includes(query) ?? false;
+			
+			return inFolder;
+		})
 	);
 
 	let observer: IntersectionObserver;

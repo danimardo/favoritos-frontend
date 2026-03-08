@@ -299,27 +299,30 @@ pub struct ImportResult {
 pub async fn import_favorites(app: AppHandle, data: String) -> Result<ImportResult, String> {
     let client = get_api_client(&app)?;
 
-    // Parse JSON data
-    let favorites: Vec<serde_json::Value> =
-        serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    // Parse JSON data to ensure it's valid
+    let payload: serde_json::Value =
+        serde_json::from_str(&data).map_err(|e| format!("Formato JSON inválido: {}", e))?;
 
-    let mut imported = 0;
-    let mut skipped = 0;
-    let mut errors = Vec::new();
-
-    for favorite in favorites {
-        match client.create_favorite(favorite).await {
-            Ok(_) => imported += 1,
-            Err(e) => {
-                skipped += 1;
-                errors.push(e.to_string());
+    // Call the bulk endpoint
+    match client.create_bookmarks_bulk(payload).await {
+        Ok(result_data) => {
+            // Map the API response to our ImportResult struct
+            let imported = result_data.get("imported").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let skipped = result_data.get("skipped").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let mut errors = Vec::new();
+            
+            if let Some(skipped_urls) = result_data.get("skippedUrls").and_then(|v| v.as_array()) {
+                for url in skipped_urls {
+                    errors.push(format!("Saltado: {}", url.as_str().unwrap_or("URL desconocida")));
+                }
             }
-        }
-    }
 
-    Ok(ImportResult {
-        imported,
-        skipped,
-        errors,
-    })
+            Ok(ImportResult {
+                imported,
+                skipped,
+                errors,
+            })
+        },
+        Err(e) => Err(format!("Error en el servidor durante la importación: {}", e)),
+    }
 }

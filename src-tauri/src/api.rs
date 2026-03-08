@@ -146,7 +146,8 @@ impl ApiClient {
 
         if response.status().is_success() {
             let data: ApiResponse<serde_json::Value> = response.json().await?;
-            data.data.ok_or_else(|| ApiError::Message("No data returned from profile".to_string()))
+            data.data
+                .ok_or_else(|| ApiError::Message("No data returned from profile".to_string()))
         } else {
             Err(ApiError::Message(format!(
                 "Failed to get profile: {}",
@@ -183,8 +184,18 @@ impl ApiClient {
             .await?;
 
         if response.status().is_success() {
-            let data: ApiResponse<Vec<serde_json::Value>> = response.json().await?;
-            Ok(data.data.unwrap_or_default())
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            if let Some(inner_data) = data.data {
+                // If it's the nested structure { data: [], meta: {} }
+                if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                    return Ok(list.iter().cloned().collect());
+                }
+                // If it's a direct array
+                if let Some(list) = inner_data.as_array() {
+                    return Ok(list.iter().cloned().collect());
+                }
+            }
+            Ok(Vec::new())
         } else {
             Err(ApiError::Message(format!(
                 "Failed to get favorites: {}",
@@ -263,6 +274,37 @@ impl ApiClient {
             tracing::error!("Error al crear favorito: {} - {}", status, error_body);
             Err(ApiError::Message(format!(
                 "Failed to create favorite: {} - {}",
+                status, error_body
+            )))
+        }
+    }
+
+    /// Create bookmarks in bulk
+    pub async fn create_bookmarks_bulk(
+        &self,
+        payload: serde_json::Value,
+    ) -> Result<serde_json::Value, ApiError> {
+        let url = format!("{}/bookmarks/bulk", self.base_url);
+        
+        tracing::debug!("Importación masiva en: {}", url);
+        
+        let response = self
+            .client
+            .post(&url)
+            .header("X-API-Key", &self.api_key)
+            .json(&payload)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            data.data.ok_or_else(|| ApiError::Message("No data returned from bulk import".to_string()))
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Error en importación masiva: {} - {}", status, error_body);
+            Err(ApiError::Message(format!(
+                "Bulk import failed: {} - {}",
                 status, error_body
             )))
         }
@@ -351,8 +393,16 @@ impl ApiClient {
             .await?;
 
         if response.status().is_success() {
-            let data: ApiResponse<Vec<serde_json::Value>> = response.json().await?;
-            Ok(data.data.unwrap_or_default())
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            if let Some(inner_data) = data.data {
+                if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                    return Ok(list.iter().cloned().collect());
+                }
+                if let Some(list) = inner_data.as_array() {
+                    return Ok(list.iter().cloned().collect());
+                }
+            }
+            Ok(Vec::new())
         } else {
             Err(ApiError::Message(format!(
                 "Failed to get folders: {}",
@@ -396,8 +446,16 @@ impl ApiClient {
             .await?;
 
         if response.status().is_success() {
-            let data: ApiResponse<Vec<serde_json::Value>> = response.json().await?;
-            Ok(data.data.unwrap_or_default())
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            if let Some(inner_data) = data.data {
+                if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                    return Ok(list.iter().cloned().collect());
+                }
+                if let Some(list) = inner_data.as_array() {
+                    return Ok(list.iter().cloned().collect());
+                }
+            }
+            Ok(Vec::new())
         } else {
             Err(ApiError::Message(format!(
                 "Failed to get tags: {}",
