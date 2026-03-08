@@ -314,9 +314,32 @@ impl ApiClient {
     pub async fn update_favorite(
         &self,
         id: &str,
-        favorite: serde_json::Value,
+        mut favorite: serde_json::Value,
     ) -> Result<serde_json::Value, ApiError> {
         let url = format!("{}/bookmarks/{}", self.base_url, id);
+
+        // Normalización: mapear folder a folderId
+        let folder_val = favorite.get("folder").cloned();
+        if let Some(folder) = folder_val {
+            if let Some(obj) = favorite.as_object_mut() {
+                obj.remove("folder");
+                if !folder.is_null() && folder.as_str().unwrap_or("") != "" {
+                    obj.insert("folderId".to_string(), folder);
+                }
+            }
+        }
+
+        // Normalización: eliminar tags vacíos
+        if let Some(tags) = favorite.get("tags") {
+            if tags.is_array() && tags.as_array().unwrap().is_empty() {
+                if let Some(obj) = favorite.as_object_mut() {
+                    obj.remove("tags");
+                }
+            }
+        }
+
+        tracing::debug!("Actualizando favorito {} con datos: {}", id, favorite);
+
         let response = self
             .client
             .put(&url)
@@ -330,9 +353,12 @@ impl ApiClient {
             data.data
                 .ok_or_else(|| ApiError::Message("No data returned".to_string()))
         } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Error al actualizar favorito: {} - {}", status, error_body);
             Err(ApiError::Message(format!(
-                "Failed to update favorite: {}",
-                response.status()
+                "Failed to update favorite: {} - {}",
+                status, error_body
             )))
         }
     }

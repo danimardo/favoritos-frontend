@@ -6,7 +6,7 @@
 	import { configuracion, isConfigured } from '$lib/stores/configuracion';
 	import { favoritos } from '$lib/stores/favoritos';
 	import { invoke } from '@tauri-apps/api/core';
-	import { RefreshCw, Settings } from 'lucide-svelte';
+	import FolderSidebar from '$lib/components/favoritos/FolderSidebar.svelte';
 
 	onMount(() => {
 		configuracion.init().then(() => checkConfig());
@@ -55,25 +55,9 @@
 	}
 
 	const isSearchPage = $derived($page.url.pathname === '/busqueda-global');
-	const isConfigPage = $derived($page.url.pathname === '/configuracion');
-
-	let refreshing = $state(false);
-
-	async function handleRefresh() {
-		if (refreshing) return;
-		refreshing = true;
-		try {
-			await favoritos.fetchAll();
-		} finally {
-			// Añadimos un pequeño retardo artificial para que la animación se vea bien
-			setTimeout(() => {
-				refreshing = false;
-			}, 800);
-		}
-	}
 </script>
 
-<div class="min-h-screen bg-parchment text-taupe selection:bg-powderBlush/30 selection:text-taupe relative font-sans">
+<div class="min-h-screen bg-parchment text-taupe selection:bg-powderBlush/30 selection:text-taupe relative font-sans flex">
 	{#if !$configuracion.ready}
 		<div class="fixed inset-0 flex items-center justify-center bg-parchment z-[10000]">
 			<div class="flex flex-col items-center gap-4">
@@ -83,32 +67,35 @@
 		</div>
 	{/if}
 
-	<main class="container mx-auto py-8 px-4">
-		<slot />
-	</main>
-
-	{#if !isSearchPage && !isConfigPage && $isConfigured}
-		<div class="fixed bottom-6 right-6 flex items-center gap-3 z-[9999]">
-			<!-- Botón de Refresco (Blanco) -->
-			<button
-				onclick={handleRefresh}
-				class="w-12 h-12 bg-white text-taupe border-2 border-taupe/10 rounded-full shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center group disabled:opacity-70"
-				title="Refrescar datos del servidor"
-				aria-label="Refrescar"
-				disabled={refreshing}
-			>
-				<RefreshCw class="w-5 h-5 {refreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'}" />
-			</button>
-
-			<!-- Botón de Configuración (Taupe) -->
-			<button
-				onclick={() => goto('/configuracion')}
-				class="w-12 h-12 bg-taupe text-parchment rounded-full shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center group"
-				title="Ajustes y Perfil"
-				aria-label="Ir a configuración"
-			>
-				<Settings class="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
-			</button>
-		</div>
+	<!-- Sidebar (Solo si está configurado y no es búsqueda global) -->
+	{#if $isConfigured && !isSearchPage}
+		<aside class="sticky top-0 h-screen hidden md:block">
+			<FolderSidebar />
+		</aside>
 	{/if}
+
+	<!-- Contenido Principal -->
+	<div class="flex-1 flex flex-col h-screen overflow-hidden">
+		<main class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
+			<div class="max-w-[1600px] mx-auto h-full">
+				<slot />
+			</div>
+		</main>
+	</div>
 </div>
+
+<style>
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 8px;
+	}
+	.custom-scrollbar-track {
+		background: transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: #C0C0C0;
+		border-radius: 10px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: #A9A9A1;
+	}
+</style>

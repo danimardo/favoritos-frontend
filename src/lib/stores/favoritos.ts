@@ -1,23 +1,29 @@
-import { writable, get } from 'svelte/store';
-import type { Favorito, FavoritoInput, FavoritoUpdate } from '$lib/types/api';
+import { writable, get, derived } from 'svelte/store';
+import type { Favorito, FavoritoInput, FavoritoUpdate, Carpeta } from '$lib/types/api';
 import { databaseService } from '$lib/services/database';
 import { apiClient } from '$lib/services/api-client';
 import { tauriNotifications } from '$lib/services/tauri';
 
 interface FavoritosState {
 	items: Favorito[];
+	folders: Carpeta[];
 	loading: boolean;
 	error: string | null;
 	page: number;
 	hasMore: boolean;
+	selectedFolderId: string | null;
+	viewMode: 'grid' | 'list';
 }
 
 const initialState: FavoritosState = {
 	items: [],
+	folders: [],
 	loading: false,
 	error: null,
 	page: 1,
-	hasMore: true
+	hasMore: true,
+	selectedFolderId: null,
+	viewMode: 'grid'
 };
 
 function createFavoritosStore() {
@@ -29,13 +35,19 @@ function createFavoritosStore() {
 		async fetchAll() {
 			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
 			try {
-				const allItems = await apiClient.getFavorites(1);
+				// Cargar favoritos y carpetas en paralelo
+				const [allItems, folders] = await Promise.all([
+					apiClient.getFavorites(1),
+					apiClient.getFolders()
+				]);
+
 				// FR-021: Ignore isArchived and isRead in frontend
 				const items = allItems.filter(item => !item.isArchived && !item.isRead);
 				
 				update((s) => ({ 
 					...s, 
 					items, 
+					folders,
 					loading: false, 
 					hasMore: allItems.length >= 50 
 				}));
@@ -149,6 +161,14 @@ function createFavoritosStore() {
 			}
 		},
 
+		selectFolder(folderId: string | null) {
+			update((s) => ({ ...s, selectedFolderId: folderId }));
+		},
+
+		setViewMode(mode: 'grid' | 'list') {
+			update((s) => ({ ...s, viewMode: mode }));
+		},
+
 		setItems(items: Favorito[]) {
 			update((s) => ({ ...s, items }));
 		},
@@ -160,3 +180,24 @@ function createFavoritosStore() {
 }
 
 export const favoritos = createFavoritosStore();
+
+// Derived store for filtered items by folder
+export const filteredByFolder = derived(favoritos, ($favs) => {
+	if (!$favs.selectedFolderId) return $favs.items;
+	return $favs.items.filter(item => 
+		item.folderId === $favs.selectedFolderId || 
+		item.folder?.id === $favs.selectedFolderId
+	);
+});
+
+// Derived store for folder counts
+export const folderCounts = derived(favoritos, ($favs) => {
+	const counts: Record<string, number> = {};
+	$favs.items.forEach(item => {
+		const fId = item.folderId || item.folder?.id;
+		if (fId) {
+			counts[fId] = (counts[fId] || 0) + 1;
+		}
+	});
+	return counts;
+});
