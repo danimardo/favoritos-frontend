@@ -62,9 +62,10 @@ Backend: `cargo test; cargo clippy`
 ### Documentos Normativos (orden de prioridad)
 1. **`specs/001-favoritos-desktop/spec.md`** - Especificación funcional completa
 2. **`.specify/memory/constitution.md`** - Reglas y limitaciones de diseño (NO negociables)
-3. **`historias.md`** - Documentación en formato "Historias de usuario"
-4. **`specs/001-favoritos-desktop/plan.md`** - Plan de implementación
-5. **`specs/001-favoritos-desktop/tasks.md`** - Tareas de desarrollo (113 tareas)
+3. **`Manual-Uso-API.md`** - Manual didáctico sobre el uso, opciones, posibilidades y características de la API (Referencia fundamental para entender el backend).
+4. **`historias.md`** - Documentación en formato "Historias de usuario"
+5. **`specs/001-favoritos-desktop/plan.md`** - Plan de implementación
+6. **`specs/001-favoritos-desktop/tasks.md`** - Tareas de desarrollo (113 tareas)
 
 ### Instrucciones para Agentes
 - Sigue estrictamente las definiciones del plan de implementación en `historias.md`, `constitution.md` y `spec.md`.

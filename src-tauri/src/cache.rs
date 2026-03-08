@@ -112,22 +112,6 @@ impl FaviconCache {
             )));
         }
 
-        // Get content type
-        let content_type = response
-            .headers()
-            .get("content-type")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("image/x-icon");
-
-        // Determine extension
-        let extension = match content_type {
-            "image/png" => "png",
-            "image/x-icon" => "ico",
-            "image/svg+xml" => "svg",
-            "image/jpeg" | "image/jpg" => "jpg",
-            _ => "png",
-        };
-
         // Save to cache
         let path = self.get_favicon_path(domain);
         let bytes = response.bytes().await?;

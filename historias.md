@@ -51,82 +51,67 @@
 
 ---
 
-## 2. Pantallas y Diálogos
+## 2. Autenticación y Perfil (Sistema Multiusuario)
 
-### 2.1 Pantalla Principal (Dashboard)
+### 2.1 Flujo de Acceso
+- **Validación Inicial**: Al arrancar, la aplicación verifica si existe una sesión activa (API Key válida y perfil de usuario accesible).
+- **Puerta de Entrada**: Si no hay sesión, se redirige automáticamente a la pantalla de **Login / Registro**.
+- **Login**: El usuario introduce su Email y Contraseña. Al tener éxito, la API devuelve una API Key única para la sesión que se almacena de forma segura en el sistema local.
+- **Registro**: Permite a nuevos usuarios crear una cuenta proporcionando Email, Contraseña y Nombre opcional.
 
-#### Comportamiento de Inicio
-- **Validación**: Al arrancar, comprueba si existe `api_key` y `base_url` en el almacenamiento local.
-- **Redirección**: Si no existen, abre automáticamente el **Panel de Configuración** con un mensaje: "Configura tu API para empezar".
-
-#### Componentes de la Lista
-- **Caché de Favicons**: Los iconos de los sitios web se guardan en la caché temporal de Tauri para evitar peticiones repetitivas a la API y mejorar el scroll.
-- **Vista**: Grid de tarjetas (Cards) con: Icono, Título, Dominio y Etiquetas.
+### 2.2 Gestión de Sesión
+- **Persistencia**: La sesión se mantiene abierta entre reinicios de la aplicación.
+- **Validación Automática**: En cada inicio, se intenta obtener el perfil del usuario (`/users/me`). Si la API Key ha sido revocada o ha expirado (error 401), se solicita el login de nuevo.
+- **Logout**: Opción disponible en el panel de configuración que elimina las credenciales locales y redirige al login.
 
 ---
 
-### 2.2 Gestión de Favoritos (Diálogos)
+## 3. Pantallas y Diálogos
+
+### 3.1 Pantalla Principal (Dashboard)
+- **Aislamiento de Datos**: El usuario solo visualiza sus propios favoritos, carpetas y etiquetas.
+- **Vista**: Grid de tarjetas (Cards) con: Icono, Título, Dominio y Etiquetas.
+- **Caché de Favicons**: Los iconos de los sitios web se guardan en la caché local para mejorar el rendimiento.
+
+---
+
+### 3.2 Gestión de Favoritos (Diálogos)
 
 #### Diálogo: Crear/Editar Favorito
-- **Gestión de Carpetas/Etiquetas**: 
-  - Dentro del selector de Carpeta, hay una opción "[+] Nueva Carpeta".
-  - El selector de etiquetas permite crear una nueva simplemente escribiendo y pulsando `Enter`.
-  - *Nota: No existe una sección de gestión de carpetas independiente en esta versión.*
-- **Borrado**: El botón "Eliminar" realiza un borrado definitivo (el frontend no ofrece opción de restaurar, aunque la API lo permita internamente).
+- **Gestión On-the-fly**: Permite crear carpetas y etiquetas directamente desde el diálogo.
+- **Borrado**: Realiza un borrado definitivo del favorito para el usuario actual.
 
 ---
 
-### 2.3 Configuración y Datos
-
-#### Panel de Configuración
-- **Campos**: URL de API, API Key.
-- **Botón Probar**: Valida contra `/health` y muestra un check verde si es correcto.
-- **Importación**: Única vía para carga masiva de archivos JSON. Al terminar, muestra una notificación nativa con el resumen (importados/saltados).
+### 3.3 Perfil y Ajustes (Anteriormente Configuración)
+- **Información del Usuario**: Muestra el Email, Nombre y la URL de la API conectada.
+- **Cerrar Sesión**: Botón para salir de la cuenta de forma segura.
+- **Ajustes Técnicos**: Permite configurar el nivel de log (Error, Info, Debug, etc.) de la aplicación.
 
 ---
 
-## 3. Especificación de Datos y Rendimiento
+## 4. Especificación de Datos y Rendimiento
 
-### 3.1 Modelo de Datos simplificado
+### 4.1 Modelo de Datos simplificado
 - Se ignoran los campos `isArchived` e `isRead` en el frontend para simplificar la interfaz.
 - El campo `visitCount` se actualiza automáticamente al abrir un link desde la app.
 
-### 3.2 Rendimiento
+### 4.2 Rendimiento
 - **Lazy Loading**: La lista principal carga los favoritos bajo demanda al hacer scroll.
-- **Filtrado Local**: La barra de búsqueda rápida filtra sobre los favoritos ya cargados en memoria para una respuesta instantánea (<50ms).
+- **Filtrado Local**: Respuesta instantánea (<50ms) en las búsquedas sobre los datos cargados.
 
 ---
 
-## 4. Mapa de Atajos de Teclado (Actualizado)
+## 5. Mapa de Atajos de Teclado
 
 | Atajo | Ámbito | Acción |
 |-------|--------|--------|
 | `Alt + Space` | Global | Búsqueda rápida (ventana mini) |
 | `Ctrl + N` | App | Abrir diálogo nuevo favorito |
 | `Ctrl + F` | App | Enfocar buscador principal |
-| `Ctrl + ,` | App | Abrir configuración |
+| `Ctrl + ,` | App | Abrir Perfil y Ajustes |
 | `Ctrl + Q` | App | Salir completamente de la aplicación |
 | `Esc` | Ventana | Cerrar diálogos o minimizar al tray |
 
 ---
-
-## 5. Roadmap de Implementación (Refinado)
-
-### Fase 1: Tauri + SvelteKit Setup
-- Configuración de System Tray y ventana básica.
-- Implementación de la paleta de colores fija en Tailwind.
-
-### Fase 2: Conectividad y Configuración
-- Pantalla de configuración y validación de API Key.
-- Lógica de redirección inicial.
-
-### Fase 3: Core CRUD
-- Listado con Cards y caché de favicons.
-- Diálogos de creación/edición con creación "on-the-fly" de carpetas/tags.
-
-### Fase 4: Integración OS
-- Búsqueda global `Alt+Space`.
-- Notificaciones y comportamiento de minimizado al Tray.
-
----
-*Fin de la especificación actualizada*
+*Fin de la especificación actualizada - Sistema Multiusuario v2*

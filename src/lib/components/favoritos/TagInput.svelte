@@ -7,16 +7,21 @@
 	let inputValue = $state("");
 
 	function handleKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
+		if (e.key === 'Enter' || e.key === ',') {
 			e.preventDefault();
 			addTag();
 		}
 	}
 
 	function addTag() {
-		const trimmed = inputValue.trim();
-		if (trimmed && !tags.includes(trimmed)) {
-			tags = [...tags, trimmed];
+		// Split by comma in case multiple tags were pasted or typed
+		const newTags = inputValue
+			.split(',')
+			.map(t => t.trim())
+			.filter(t => t !== "" && !tags.includes(t));
+
+		if (newTags.length > 0) {
+			tags = [...tags, ...newTags];
 			inputValue = "";
 		}
 	}
@@ -46,9 +51,10 @@
 			id={id}
 			bind:value={inputValue} 
 			onkeydown={handleKeyDown} 
-			placeholder="Añadir etiqueta y pulsar Enter" 
+			placeholder="Ej: trabajo, dev..." 
 			class="bg-background border-silver"
 		/>
-		<Button variant="outline" onclick={addTag} type="button">Añadir</Button>
+		<Button variant="outline" onclick={addTag} type="button" class="text-taupe border-silver">Añadir</Button>
 	</div>
+	<p class="text-[10px] text-greyOlive">Separa las etiquetas con comas o pulsa Enter para añadirlas.</p>
 </div>

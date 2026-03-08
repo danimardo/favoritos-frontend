@@ -1,8 +1,30 @@
 // API Client service - HTTP client for Favoritos API
 import { invoke } from '@tauri-apps/api/core';
-import type { Favorito, FavoritoInput, FavoritoUpdate, Carpeta, Etiqueta, ImportResult } from '$lib/types/api';
+import type { 
+	Favorito, 
+	FavoritoInput, 
+	FavoritoUpdate, 
+	Carpeta, 
+	Etiqueta, 
+	ImportResult,
+	AuthResponse,
+	User
+} from '$lib/types/api';
 
 export const apiClient = {
+	// Auth
+	async login(apiUrl: string, email: string, password: string): Promise<AuthResponse> {
+		return invoke<AuthResponse>('auth_login', { apiUrl, email, password });
+	},
+
+	async register(apiUrl: string, email: string, password: string, name?: string): Promise<AuthResponse> {
+		return invoke<AuthResponse>('auth_register', { apiUrl, email, password, name });
+	},
+
+	async getProfile(): Promise<User> {
+		return invoke<User>('user_get_profile');
+	},
+
 	// Favorites
 	async getFavorites(page?: number, limit?: number): Promise<Favorito[]> {
 		return invoke<Favorito[]>('favorites_get', { page, limit });

@@ -70,7 +70,7 @@ Authorization: Bearer {api_key}
 Obtiene la lista de favoritos del usuario con soporte para paginación.
 
 ```http
-GET /api/favorites
+GET /bookmarks
 ```
 
 **Query Parameters**:
@@ -87,13 +87,14 @@ GET /api/favorites
 
 **Request**:
 ```http
-GET /api/favorites?page=1&limit=50&sort=createdAt&order=desc
+GET /bookmarks?page=1&limit=50&sort=createdAt&order=desc
 Authorization: Bearer {api_key}
 ```
 
 **Response 200 OK**:
 ```json
 {
+  "success": true,
   "data": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -128,25 +129,28 @@ Authorization: Bearer {api_key}
 ### 3. Obtener Favorito por ID
 
 ```http
-GET /api/favorites/{id}
+GET /bookmarks/{id}
 ```
 
 **Response 200 OK**:
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "url": "https://example.com",
-  "title": "Ejemplo",
-  "description": "Un sitio de ejemplo",
-  "domain": "example.com",
-  "faviconUrl": "https://example.com/favicon.ico",
-  "tags": ["tech", "news"],
-  "folder": "Work",
-  "visitCount": 5,
-  "isArchived": false,
-  "isRead": true,
-  "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-03-07T10:00:00Z"
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "url": "https://example.com",
+    "title": "Ejemplo",
+    "description": "Un sitio de ejemplo",
+    "domain": "example.com",
+    "faviconUrl": "https://example.com/favicon.ico",
+    "tags": ["tech", "news"],
+    "folder": "Work",
+    "visitCount": 5,
+    "isArchived": false,
+    "isRead": true,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-03-07T10:00:00Z"
+  }
 }
 ```
 
@@ -157,7 +161,7 @@ GET /api/favorites/{id}
 ### 4. Crear Favorito
 
 ```http
-POST /api/favorites
+POST /bookmarks
 ```
 
 **Request Body**:
@@ -174,19 +178,22 @@ POST /api/favorites
 **Response 201 Created**:
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "url": "https://example.com",
-  "title": "Ejemplo",
-  "description": "Un sitio de ejemplo",
-  "domain": "example.com",
-  "faviconUrl": "https://example.com/favicon.ico",
-  "tags": ["tech", "news"],
-  "folder": "Work",
-  "visitCount": 0,
-  "isArchived": false,
-  "isRead": false,
-  "createdAt": "2026-03-07T10:00:00Z",
-  "updatedAt": "2026-03-07T10:00:00Z"
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "url": "https://example.com",
+    "title": "Ejemplo",
+    "description": "Un sitio de ejemplo",
+    "domain": "example.com",
+    "faviconUrl": "https://example.com/favicon.ico",
+    "tags": ["tech", "news"],
+    "folder": "Work",
+    "visitCount": 0,
+    "isArchived": false,
+    "isRead": false,
+    "createdAt": "2026-03-07T10:00:00Z",
+    "updatedAt": "2026-03-07T10:00:00Z"
+  }
 }
 ```
 
@@ -198,7 +205,7 @@ POST /api/favorites
 ### 5. Actualizar Favorito
 
 ```http
-PUT /api/favorites/{id}
+PUT /bookmarks/{id}
 ```
 
 **Request Body** (todos los campos opcionales):
@@ -221,7 +228,7 @@ PUT /api/favorites/{id}
 ### 6. Eliminar Favorito
 
 ```http
-DELETE /api/favorites/{id}
+DELETE /bookmarks/{id}
 ```
 
 **Response 204 No Content**
@@ -233,13 +240,16 @@ DELETE /api/favorites/{id}
 ### 7. Incrementar Contador de Visitas
 
 ```http
-POST /api/favorites/{id}/visit
+POST /bookmarks/{id}/visit
 ```
 
 **Response 200 OK**:
 ```json
 {
-  "visitCount": 6
+  "success": true,
+  "data": {
+    "visitCount": 6
+  }
 }
 ```
 
@@ -250,23 +260,25 @@ POST /api/favorites/{id}/visit
 Obtiene el título y favicon de una URL sin crear el favorito.
 
 ```http
-POST /api/metadata
+GET /metadata?url={url}
 ```
 
-**Request Body**:
-```json
-{
-  "url": "https://example.com"
-}
+**Request**:
+```http
+GET /metadata?url=https%3A%2F%2Fexample.com
+Authorization: Bearer {api_key}
 ```
 
 **Response 200 OK**:
 ```json
 {
-  "url": "https://example.com",
-  "title": "Example Domain",
-  "faviconUrl": "https://example.com/favicon.ico",
-  "domain": "example.com"
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "title": "Example Domain",
+    "faviconUrl": "https://example.com/favicon.ico",
+    "domain": "example.com"
+  }
 }
 ```
 
@@ -278,12 +290,13 @@ POST /api/metadata
 ### 9. Listar Carpetas
 
 ```http
-GET /api/folders
+GET /folders
 ```
 
 **Response 200 OK**:
 ```json
 {
+  "success": true,
   "data": [
     {
       "id": "folder-1",
@@ -306,7 +319,7 @@ GET /api/folders
 ### 10. Crear Carpeta
 
 ```http
-POST /api/folders
+POST /folders
 ```
 
 **Request Body**:
@@ -320,10 +333,13 @@ POST /api/folders
 **Response 201 Created**:
 ```json
 {
-  "id": "folder-3",
-  "name": "Projects",
-  "order": 3,
-  "createdAt": "2026-03-07T10:00:00Z"
+  "success": true,
+  "data": {
+    "id": "folder-3",
+    "name": "Projects",
+    "order": 3,
+    "createdAt": "2026-03-07T10:00:00Z"
+  }
 }
 ```
 
@@ -332,12 +348,13 @@ POST /api/folders
 ### 11. Listar Etiquetas
 
 ```http
-GET /api/tags
+GET /tags
 ```
 
 **Response 200 OK**:
 ```json
 {
+  "success": true,
   "data": [
     {
       "id": "tag-1",
@@ -358,7 +375,7 @@ GET /api/tags
 ### 12. Crear Etiqueta
 
 ```http
-POST /api/tags
+POST /tags
 ```
 
 **Request Body**:
@@ -376,7 +393,7 @@ POST /api/tags
 ### 13. Importar Favoritos
 
 ```http
-POST /api/import
+POST /import
 ```
 
 **Request Body** (formato de archivo):
@@ -397,9 +414,12 @@ POST /api/import
 **Response 200 OK**:
 ```json
 {
-  "imported": 85,
-  "skipped": 15,
-  "errors": []
+  "success": true,
+  "data": {
+    "imported": 85,
+    "skipped": 15,
+    "errors": []
+  }
 }
 ```
 

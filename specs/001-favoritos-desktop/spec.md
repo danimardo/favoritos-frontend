@@ -8,40 +8,41 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Configuración Inicial de API (Priority: P1)
+### User Story 1 - Autenticación de Usuario (Priority: P1)
 
-Como usuario, necesito configurar mi API Key y URL base para poder comenzar a usar la aplicación, ya que sin esta configuración la aplicación no puede funcionar.
+Como usuario, necesito registrarme e iniciar sesión con mi email y contraseña para acceder a mis favoritos personales de forma segura.
 
-**Why this priority**: Es un bloqueador absoluto. Sin configuración de API, ninguna otra funcionalidad puede operar. Es el primer punto de entrada obligatorio para cualquier usuario.
+**Why this priority**: Es el bloqueador absoluto y la base del sistema multiusuario. Sin autenticación, el usuario no puede acceder a sus datos privados.
 
-**Independent Test**: Se puede probar independientemente iniciando la aplicación por primera vez y verificando que:
-1. Se redirige automáticamente al panel de configuración
-2. El formulario acepta y valida credenciales correctas
-3. Las credenciales se almacenan persistentemente
-4. Tras configurar, la aplicación funciona correctamente
+**Independent Test**:
+1. El usuario abre la app por primera vez y se le presenta el formulario de Login/Registro.
+2. El usuario crea una cuenta nueva exitosamente.
+3. El usuario inicia sesión con sus credenciales.
+4. Tras el login, la aplicación obtiene la API Key dinámica y muestra el dashboard.
+5. Al reiniciar la app, la sesión persiste automáticamente.
 
 **Acceptance Scenarios**:
 
-1. **Given** la aplicación se inicia por primera vez sin configuración, **When** el usuario abre la app, **Then** se muestra automáticamente el panel de configuración con el mensaje "Configura tu API para empezar"
-2. **Given** el usuario ingresa una URL de API válida y API Key correcta, **When** hace clic en "Probar", **Then** se muestra un check verde confirmando la conexión exitosa
-3. **Given** el usuario ingresa credenciales inválidas, **When** hace clic en "Probar", **Then** se muestra un mensaje de error indicando el problema
-4. **Given** el usuario completa la configuración exitosamente, **When** cierra y reabre la aplicación, **Then** la configuración persiste y no se le pide nuevamente
+1. **Given** la aplicación se inicia sin sesión activa, **When** el usuario abre la app, **Then** se muestra la pantalla de Login con opción de Registro.
+2. **Given** el usuario introduce credenciales válidas, **When** hace clic en "Entrar", **Then** se obtiene su perfil y se redirige al dashboard.
+3. **Given** el usuario introduce credenciales inválidas, **When** intenta loguearse, **Then** se muestra un mensaje de error claro ("Credenciales inválidas").
+4. **Given** el usuario quiere crear una cuenta, **When** completa el formulario de registro, **Then** se crea su usuario e inicia sesión automáticamente.
+5. **Given** el usuario está logueado, **When** accede a Ajustes y pulsa "Cerrar Sesión", **Then** se eliminan las credenciales locales y vuelve a la pantalla de Login.
 
 ---
 
 ### User Story 2 - Gestión de Favoritos CRUD (Priority: P1)
 
-Como usuario, necesito crear, ver, editar y eliminar favoritos para organizar mis enlaces importantes de manera eficiente.
+Como usuario, necesito crear, ver, editar y eliminar mis favoritos personales asegurando el aislamiento de datos.
 
-**Why this priority**: Es el valor core de la aplicación. Sin esta funcionalidad, la aplicación no tiene propósito. Es la razón principal por la que un usuario instalaría esta app.
+**Why this priority**: Es el valor core de la aplicación. Sin esta funcionalidad, la aplicación no tiene propósito.
 
-**Independent Test**: Se puede probar independientemente realizando operaciones CRUD completas sobre favoritos y verificando que los cambios persisten y se reflejan correctamente en la UI.
+**Independent Test**: Se puede probar independientemente realizando operaciones CRUD completas y verificando que los cambios son privados para el usuario.
 
 **Acceptance Scenarios**:
 
-1. **Given** el usuario está en el panel principal, **When** presiona `Ctrl+N` o clic en "Nuevo Favorito", **Then** se abre el diálogo de creación con campos vacíos
-2. **Given** el usuario pega una URL en el diálogo de creación, **When** el sistema obtiene metadata exitosamente, **Then** se muestra una notificación nativa confirmando la obtención de metadata
-3. **Given** el usuario crea un nuevo favorito, **When** completa el formulario y guarda, **Then** el favorito aparece en la lista principal con todos sus datos
+1. **Given** el usuario está logueado, **When** presiona `Ctrl+N` o clic en "Nuevo Favorito", **Then** se abre el diálogo de creación.
+2. **Given** el usuario crea un nuevo favorito, **When** completa el formulario y guarda, **Then** el favorito aparece en su lista personal.
 4. **Given** el usuario edita un favorito existente, **When** modifica sus datos y guarda, **Then** los cambios se reflejan inmediatamente en la lista
 5. **Given** el usuario elimina un favorito, **When** confirma la eliminación, **Then** el favorito desaparece de la lista permanentemente
 6. **Given** el usuario crea una etiqueta escribiendo y presionando Enter, **When** completa la acción, **Then** la nueva etiqueta se crea y queda asociada al favorito
@@ -130,39 +131,41 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 
 ### Functional Requirements
 
-- **FR-001**: La aplicación DEBE verificar al inicio si existe configuración de API (api_key y base_url) almacenada
-- **FR-002**: La aplicación DEBE redirigir al panel de configuración si no existe configuración válida
-- **FR-003**: La aplicación DEBE validar la conexión a la API y la validez de la API Key realizando una petición de prueba a un endpoint protegido (ej: `/bookmarks`).
-- **FR-026**: La aplicación DEBE permitir al usuario configurar el nivel de log (Error, Warn, Info, Debug) y persistir esta preferencia.
-- **FR-004**: La aplicación DEBE almacenar de forma segura (credential store) la API Key y URL base
-- **FR-005**: La aplicación DEBE permitir crear favoritos con URL, título, descripción, carpeta y etiquetas
-- **FR-006**: La aplicación DEBE permitir editar favoritos existentes
-- **FR-007**: La aplicación DEBE permitir eliminar favoritos (borrado definitivo)
-- **FR-008**: La aplicación DEBE permitir crear carpetas y etiquetas "on-the-fly" desde el diálogo de favorito
-- **FR-009**: La aplicación DEBE obtener automáticamente metadata (favicon, título) al pegar una URL
-- **FR-010**: La aplicación DEBE cachear favicons localmente para evitar peticiones repetitivas
-- **FR-011**: La aplicación DEBE mostrar los favoritos en un grid de tarjetas con icono, título, dominio y etiquetas
-- **FR-012**: La aplicación DEBE implementar lazy loading para la lista de favoritos
-- **FR-013**: La aplicación DEBE filtrar localmente (<50ms) los favoritos en la búsqueda
-- **FR-014**: La aplicación DEBE incrementar el contador de visitas al abrir un favorito
-- **FR-015**: La aplicación DEBE responder al atajo `Alt+Space` abriendo la búsqueda global
-- **FR-016**: La aplicación DEBE mantener el icono en el System Tray mientras se ejecuta
-- **FR-017**: La aplicación DEBE minimizar al tray (no cerrar) al presionar el botón X
-- **FR-018**: La aplicación DEBE permitir salir completamente con `Ctrl+Q` o menú del tray
-- **FR-019**: La aplicación DEBE enviar notificaciones nativas para errores críticos de conexión
-- **FR-020**: La aplicación DEBE enviar notificaciones nativas al completar importación masiva
-- **FR-021**: La aplicación DEBE ignorar los campos `isArchived` e `isRead` en el frontend
-- **FR-022**: La aplicación DEBE permitir importar favoritos desde archivos JSON
-- **FR-023**: La aplicación DEBE mostrar notificación con resumen (importados/saltados) tras importación
-- **FR-024**: La aplicación DEBE mantener la paleta de colores fija (sin modo claro/oscuro)
-- **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `Ctrl+F` (buscar), `Ctrl+,` (config), `Ctrl+Q` (salir), `Esc` (cerrar diálogos/minimizar)
+- **FR-001**: La aplicación DEBE verificar al inicio si existe una sesión válida (API Key almacenada y perfil accesible).
+- **FR-002**: La aplicación DEBE redirigir a la pantalla de Login/Registro si no existe una sesión activa.
+- **FR-003**: La aplicación DEBE validar la sesión realizando una petición al perfil del usuario (`GET /users/me`).
+- **FR-004**: La aplicación DEBE permitir el registro de nuevos usuarios mediante Email y Contraseña.
+- **FR-005**: La aplicación DEBE permitir el inicio de sesión para obtener una API Key dinámica.
+- **FR-006**: La aplicación DEBE almacenar de forma segura la API Key obtenida en el almacenamiento local.
+- **FR-007**: La aplicación DEBE permitir cerrar sesión (Logout), eliminando las credenciales locales.
+- **FR-008**: La aplicación DEBE permitir crear favoritos con URL, título, descripción, carpeta y etiquetas asociados al usuario logueado.
+- **FR-009**: La aplicación DEBE obtener automáticamente metadata (favicon, título) al pegar una URL.
+- **FR-010**: La aplicación DEBE cachear favicons localmente para evitar peticiones repetitivas.
+- **FR-011**: La aplicación DEBE mostrar los favoritos en un grid de tarjetas.
+- **FR-012**: La aplicación DEBE implementar lazy loading.
+- **FR-013**: La aplicación DEBE filtrar localmente los favoritos en la búsqueda.
+- **FR-014**: La aplicación DEBE incrementar el contador de visitas al abrir un favorito.
+- **FR-015**: La aplicación DEBE responder al atajo `Alt+Space` abriendo la búsqueda global.
+- **FR-016**: La aplicación DEBE mantener el icono en el System Tray.
+- **FR-017**: La aplicación DEBE minimizar al tray al presionar el botón X.
+- **FR-018**: La aplicación DEBE permitir salir completamente con `Ctrl+Q` o menú del tray.
+- **FR-019**: La aplicación DEBE enviar notificaciones nativas para errores críticos.
+- **FR-020**: La aplicación DEBE enviar notificaciones nativas al completar importación.
+- **FR-021**: La aplicación DEBE ignorar los campos `isArchived` e `isRead` en el frontend.
+- **FR-022**: La aplicación DEBE permitir importar favoritos desde archivos JSON asociados al usuario actual.
+- **FR-023**: La aplicación DEBE mostrar notificación con resumen tras importación.
+- **FR-024**: La aplicación DEBE mantener la paleta de colores fija.
+- **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `Ctrl+F` (buscar), `Ctrl+,` (perfil), `Ctrl+Q` (salir), `Esc` (cerrar/minimizar).
+- **FR-026**: La aplicación DEBE permitir al usuario configurar el nivel de log.
+- **FR-027**: La aplicación DEBE persistir automáticamente el tamaño y la posición de la ventana.
 
 ### Key Entities
 
-- **Favorito**: Representa un enlace guardado por el usuario. Atributos: URL, título, descripción, dominio (extraído de URL), favicon (URL o caché), etiquetas (múltiples), carpeta (una), contador de visitas.
-- **Carpeta**: Agrupa favoritos según criterios del usuario. Atributos: nombre, orden/posición.
-- **Etiqueta**: Clasificación flexible de favoritos. Un favorito puede tener múltiples etiquetas. Atributos: nombre, color.
-- **Configuración**: Almacena las credenciales de conexión a la API. Atributos: URL base, API Key.
+- **Usuario**: Entidad principal que representa al dueño de los datos. Atributos: Email, Nombre, ID único.
+- **Favorito**: Representa un enlace guardado por el usuario. Atributos: URL, título, descripción, dominio, favicon, etiquetas, carpeta, contador de visitas.
+- **Carpeta**: Agrupa favoritos. Atributos: nombre, orden/posición.
+- **Etiqueta**: Clasificación flexible de favoritos.
+- **Sesión**: Almacena las credenciales de conexión activas. Atributos: API URL, API Key dinámica, Usuario actual.
 
 ## Success Criteria *(mandatory)*
 

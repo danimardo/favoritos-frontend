@@ -1,6 +1,6 @@
 [package]
 name = "favoritos-frontend"
-version = "0.2.0"
+version = "0.2.1"
 description = "Favoritos Desktop - A native desktop app for managing favorites"
 authors = ["you"]
 edition = "2021"
@@ -18,11 +18,14 @@ tauri-plugin-opener = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-window-state = "2"
+tauri-plugin-store = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 tokio = { version = "1", features = ["full"] }
 keyring = "3"
+dirs = "6"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2"

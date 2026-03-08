@@ -13,11 +13,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 fn setup_logging() {
-    let log_level_str = config::ConfigManager::get()
-        .ok()
-        .flatten()
-        .map(|c| c.log_level)
-        .unwrap_or_else(|| "info".to_string());
+    let log_level_str = config::ConfigManager::get_initial_log_level();
 
     let filter = format!("favoritos_app_lib={}", log_level_str);
 
@@ -34,6 +30,8 @@ pub fn run() {
     info!("Starting Favoritos Desktop application");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
@@ -76,6 +74,11 @@ pub fn run() {
             // Setup system tray
             tray::setup_tray(app.handle())?;
 
+            // Ensure search window is hidden on start
+            if let Some(search_window) = app.get_webview_window("search") {
+                let _ = search_window.hide();
+            }
+
             info!("Application setup complete");
             Ok(())
         })
@@ -83,8 +86,13 @@ pub fn run() {
             // Config commands
             commands::config_get,
             commands::config_save,
+            commands::config_update_settings,
             commands::config_validate,
             commands::config_clear,
+            // Auth & User commands
+            commands::auth_login,
+            commands::auth_register,
+            commands::user_get_profile,
             // Favorites commands
             commands::favorites_get,
             commands::favorites_get_by_id,

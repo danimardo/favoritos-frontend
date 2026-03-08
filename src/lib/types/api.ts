@@ -5,6 +5,7 @@ export interface Favorito {
 	url: string;
 	title: string;
 	description?: string;
+	notes?: string;
 	domain: string;
 	faviconUrl?: string;
 	faviconCached?: string;
@@ -30,9 +31,23 @@ export interface Etiqueta {
 	color?: string;
 }
 
+export interface User {
+	id: string;
+	email: string;
+	name?: string;
+	isActive: boolean;
+	createdAt: string;
+}
+
+export interface AuthResponse {
+	user: User;
+	apiKey: string;
+}
+
 export interface ApiConfig {
 	apiUrl: string;
 	apiKey: string;
+	user?: User;
 }
 
 export interface ConfigResponse {
@@ -65,6 +80,7 @@ export interface FavoritoInput {
 	url: string;
 	title: string;
 	description?: string;
+	notes?: string;
 	tags?: string[];
 	folder?: string;
 }

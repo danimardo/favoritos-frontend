@@ -41,10 +41,10 @@ impl ApiClient {
         }
     }
 
-    /// Validate credentials by attempting to fetch a small list of favorites
+    /// Validate credentials by attempting to fetch the current user profile
     pub async fn validate_credentials(&self) -> Result<(), ApiError> {
-        let url = format!("{}/bookmarks", self.base_url);
-        tracing::info!("Validando conexión a: {}", url);
+        let url = format!("{}/users/me", self.base_url);
+        tracing::info!("Validando sesión en: {}", url);
         
         let response = self
             .client
@@ -54,22 +54,104 @@ impl ApiClient {
             .await?;
 
         if response.status().is_success() {
-            tracing::info!("Validación exitosa");
+            tracing::info!("Sesión válida");
             Ok(())
         } else {
             let status = response.status();
             let error_body = response.text().await.unwrap_or_default();
-            tracing::error!("Validación fallida: {} - {}", status, error_body);
+            tracing::error!("Validación de sesión fallida: {} - {}", status, error_body);
             
             if status == 401 || status == 403 {
-                Err(ApiError::Message("API Key inválida o sin permisos".to_string()))
+                Err(ApiError::Message("Sesión expirada o API Key inválida".to_string()))
             } else {
                 Err(ApiError::Message(format!(
-                    "Error de validación ({}): {}",
+                    "Error al validar sesión ({}): {}",
                     status,
                     error_body
                 )))
             }
+        }
+    }
+
+    /// Login with email and password to get a new API Key
+    pub async fn login(&self, email: &str, password: &str) -> Result<serde_json::Value, ApiError> {
+        let url = format!("{}/auth/login", self.base_url);
+        let body = serde_json::json!({
+            "email": email,
+            "password": password
+        });
+
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            data.data.ok_or_else(|| ApiError::Message("No data returned from login".to_string()))
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            let message = if status == 401 {
+                "Credenciales inválidas".to_string()
+            } else {
+                format!("Error en login ({}): {}", status, error_body)
+            };
+            Err(ApiError::Message(message))
+        }
+    }
+
+    /// Register a new user
+    pub async fn register(&self, email: &str, password: &str, name: Option<&str>) -> Result<serde_json::Value, ApiError> {
+        let url = format!("{}/auth/register", self.base_url);
+        let body = serde_json::json!({
+            "email": email,
+            "password": password,
+            "name": name
+        });
+
+        let response = self
+            .client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            data.data.ok_or_else(|| ApiError::Message("No data returned from register".to_string()))
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            let message = if status == 409 {
+                "El email ya está registrado".to_string()
+            } else {
+                format!("Error en registro ({}): {}", status, error_body)
+            };
+            Err(ApiError::Message(message))
+        }
+    }
+
+    /// Get current user profile
+    pub async fn get_profile(&self) -> Result<serde_json::Value, ApiError> {
+        let url = format!("{}/users/me", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            data.data.ok_or_else(|| ApiError::Message("No data returned from profile".to_string()))
+        } else {
+            Err(ApiError::Message(format!(
+                "Failed to get profile: {}",
+                response.status()
+            )))
         }
     }
 
@@ -136,9 +218,32 @@ impl ApiClient {
     /// Create a new favorite
     pub async fn create_favorite(
         &self,
-        favorite: serde_json::Value,
+        mut favorite: serde_json::Value,
     ) -> Result<serde_json::Value, ApiError> {
-        let url = format!("{}/favorites", self.base_url);
+        let url = format!("{}/bookmarks", self.base_url);
+        
+        // Fix: some APIs expect folderId instead of folder
+        let folder_val = favorite.get("folder").cloned();
+        if let Some(folder) = folder_val {
+            if let Some(obj) = favorite.as_object_mut() {
+                obj.remove("folder");
+                if !folder.is_null() && folder.as_str().unwrap_or("") != "" {
+                    obj.insert("folderId".to_string(), folder);
+                }
+            }
+        }
+
+        // Fix: remove empty tags if present
+        if let Some(tags) = favorite.get("tags") {
+            if tags.is_array() && tags.as_array().unwrap().is_empty() {
+                if let Some(obj) = favorite.as_object_mut() {
+                    obj.remove("tags");
+                }
+            }
+        }
+
+        tracing::debug!("Creando favorito en: {} con datos: {}", url, favorite);
+        
         let response = self
             .client
             .post(&url)
@@ -149,12 +254,16 @@ impl ApiClient {
 
         if response.status().is_success() {
             let data: ApiResponse<serde_json::Value> = response.json().await?;
+            tracing::debug!("Favorito creado con éxito");
             data.data
                 .ok_or_else(|| ApiError::Message("No data returned".to_string()))
         } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("Error al crear favorito: {} - {}", status, error_body);
             Err(ApiError::Message(format!(
-                "Failed to create favorite: {}",
-                response.status()
+                "Failed to create favorite: {} - {}",
+                status, error_body
             )))
         }
     }
