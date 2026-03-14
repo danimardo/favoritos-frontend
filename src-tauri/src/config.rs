@@ -53,7 +53,7 @@ impl ConfigManager {
     }
 
     pub fn get(app: &AppHandle) -> Option<ApiConfig> {
-        tracing::info!("Recuperando configuración del Store...");
+        tracing::debug!("[Config] Recuperando configuración del Store...");
         let store = Self::get_or_load_store(app).ok()?;
 
         let api_url = store.get("api_url")?.as_str()?.to_string();
@@ -66,12 +66,14 @@ impl ConfigManager {
             .and_then(|v| v.as_str().map(|s| s.to_string()))
             .unwrap_or_else(|| "info".to_string());
 
-        tracing::info!("Configuración recuperada con éxito");
+        tracing::debug!("[Config] URL recuperada: {}", api_url);
+        tracing::debug!("[Config] API Key presente: {}", !api_key.is_empty());
+        tracing::debug!("[Config] Log level: {}", log_level);
         Some(ApiConfig::new(api_url, api_key, log_level))
     }
 
     pub fn save(app: &AppHandle, config: &ApiConfig) -> Result<(), String> {
-        tracing::info!("Guardando configuración en el Store...");
+        tracing::info!("[Config] Guardando configuración — URL: {}", config.api_url);
         let store = Self::get_or_load_store(app)?;
 
         let encrypted_key = ApiConfig::encrypt_key(&config.api_key);
@@ -82,7 +84,7 @@ impl ConfigManager {
 
         store.save().map_err(|e| e.to_string())?;
 
-        tracing::info!("Configuración persistida correctamente");
+        tracing::info!("[Config] Configuración persistida correctamente");
         Ok(())
     }
 

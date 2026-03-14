@@ -103,6 +103,7 @@ pub fn run() {
             commands::favorites_visit,
             commands::favorites_open_url,
             commands::favorites_export,
+            commands::favorites_export_html,
             // Folder commands
             commands::folders_get,
             commands::folders_create,

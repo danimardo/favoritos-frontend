@@ -1,24 +1,15 @@
 <script lang="ts">
 	import ConfigForm from '$lib/components/favoritos/ConfigForm.svelte';
 	import ImportDialog from '$lib/components/favoritos/ImportDialog.svelte';
+	import ExportDialog from '$lib/components/favoritos/ExportDialog.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Button } from '$lib/components/ui/button';
-	import { FileJson, ArrowLeft, Download, Upload, Loader2 } from 'lucide-svelte';
+	import { ArrowLeft, Download, Upload } from 'lucide-svelte';
 	import { isConfigured } from '$lib/stores/configuracion';
-	import { favoritos } from '$lib/stores/favoritos';
 	import { goto } from '$app/navigation';
 
 	let importOpen = $state(false);
-	let exporting = $state(false);
-
-	async function handleExport() {
-		exporting = true;
-		try {
-			await favoritos.exportAll();
-		} finally {
-			exporting = false;
-		}
-	}
+	let exportOpen = $state(false);
 </script>
 
 <div class="max-w-2xl mx-auto space-y-6 pb-12">
@@ -52,31 +43,26 @@
 				Exporta tu colección completa o importa datos desde otros equipos.
 			</p>
 			<div class="flex flex-wrap gap-3">
-				<Button 
-					variant="outline" 
+				<Button
+					variant="outline"
 					class="border-taupe text-taupe hover:bg-taupe/5 font-bold"
 					onclick={() => (importOpen = true)}
 				>
 					<Upload class="mr-2 h-4 w-4" />
-					Importar JSON
+					Importar
 				</Button>
 
-				<Button 
-					variant="outline" 
+				<Button
+					variant="outline"
 					class="border-taupe text-taupe hover:bg-taupe/5 font-bold"
-					onclick={handleExport}
-					disabled={exporting}
+					onclick={() => (exportOpen = true)}
 				>
-					{#if exporting}
-						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						Exportando...
-					{:else}
-						<Download class="mr-2 h-4 w-4" />
-						Exportar Todo
-					{/if}
+					<Download class="mr-2 h-4 w-4" />
+					Exportar
 				</Button>
 			</div>
 			<ImportDialog bind:open={importOpen} />
+			<ExportDialog bind:open={exportOpen} />
 		</div>
 	{/if}
 

@@ -203,6 +203,26 @@ function createFavoritosStore() {
 			}
 		},
 
+		async exportHtml() {
+			console.log('[Export HTML] Iniciando exportación en formato marcadores...');
+			update((s) => ({ ...s, loading: true }));
+
+			try {
+				const saved = await invoke<boolean>('favorites_export_html');
+
+				console.log('[Export HTML] Resultado:', saved);
+				if (saved) {
+					await tauriNotifications.showSuccess("Exportación HTML completada con éxito");
+				}
+			} catch (error) {
+				console.error('[Export HTML Error]', error);
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				await tauriNotifications.showError(`Error al exportar: ${errorMsg}`);
+			} finally {
+				update((s) => ({ ...s, loading: false }));
+			}
+		},
+
 		selectFolder(folderId: string | null) {
 			update((s) => ({ ...s, selectedFolderId: folderId }));
 		},

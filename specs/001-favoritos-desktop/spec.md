@@ -87,17 +87,18 @@ Como usuario, necesito que la aplicación se comporte como una app nativa con Sy
 
 ### User Story 5 - Importación Masiva (Priority: P3)
 
-Como usuario, necesito importar una colección grande de favoritos desde un archivo JSON para migrar mis datos existentes sin tener que agregarlos manualmente.
+Como usuario, necesito importar una colección grande de favoritos desde un archivo HTML de marcadores (formato Netscape Bookmark, exportado desde Firefox, Chrome, etc.) para migrar mis datos existentes sin tener que agregarlos manualmente. Opcionalmente, puedo activar el enriquecimiento con IA para que el servidor analice cada marcador y complete automáticamente título, descripción y etiquetas.
 
 **Why this priority**: Es una funcionalidad importante pero de uso poco frecuente (one-time o migraciones ocasionales). La app puede funcionar perfectamente sin ella.
 
-**Independent Test**: Se puede probar independientemente cargando un archivo JSON válido y verificando que los favoritos se importan correctamente y se muestra el resumen con notificación.
+**Independent Test**: Se puede probar independientemente cargando un archivo HTML de marcadores válido y verificando que los favoritos se importan correctamente y se muestra el resumen con notificación.
 
 **Acceptance Scenarios**:
 
-1. **Given** el usuario está en el panel de configuración, **When** hace clic en "Importar" y selecciona un archivo JSON válido, **Then** los favoritos se importan correctamente
-2. **Given** la importación finaliza exitosamente, **When** se completa el proceso, **Then** se muestra una notificación nativa con el resumen (cantidad importada/cantidad saltada)
+1. **Given** el usuario está en el panel de configuración, **When** hace clic en "Importar" y selecciona un archivo HTML de marcadores válido, **Then** los favoritos se importan correctamente vía `POST /bookmarks/import` (multipart/form-data)
+2. **Given** la importación finaliza exitosamente, **When** se completa el proceso, **Then** se muestra una notificación nativa con el resumen (importados/actualizados/omitidos/total)
 3. **Given** el usuario intenta importar un archivo con formato inválido, **When** inicia la importación, **Then** se muestra un mensaje de error indicando el problema
+4. **Given** el usuario activa el toggle de "Enriquecimiento con IA", **When** se envía el archivo, **Then** se incluye el parámetro `ia=true` para que el servidor enriquezca los datos con IA
 
 ---
 
@@ -115,7 +116,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
   - La aplicación debe usar un icono genérico o placeholder
   - No se debe impedir la creación/visualización del favorito
 
-- **Qué pasa cuando** se intenta importar un JSON con estructura inválida?
+- **Qué pasa cuando** se intenta importar un archivo HTML con estructura inválida?
   - Se debe mostrar un mensaje de error específico indicando el problema de validación
   - La importación no debe modificar datos existentes
 
@@ -152,8 +153,9 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-019**: La aplicación DEBE enviar notificaciones nativas para errores críticos.
 - **FR-020**: La aplicación DEBE enviar notificaciones nativas al completar importación.
 - **FR-021**: La aplicación DEBE ignorar los campos `isArchived` e `isRead` en el frontend.
-- **FR-022**: La aplicación DEBE permitir importar favoritos de forma masiva utilizando el endpoint `/bookmarks/bulk`, soportando tanto arrays de objetos como el formato oficial `{ bookmarks: [] }`.
-- **FR-023**: La aplicación DEBE mostrar notificación con resumen tras importación.
+- **FR-022**: La aplicación DEBE permitir importar favoritos de forma masiva desde archivos HTML de marcadores (formato Netscape Bookmark) utilizando el endpoint `POST /bookmarks/import` con `multipart/form-data`. Debe ofrecer un toggle para activar enriquecimiento con IA (`ia=true`).
+- **FR-023**: La aplicación DEBE mostrar notificación con resumen tras importación (importados, actualizados, omitidos, total).
+- **FR-023b**: La aplicación DEBE permitir exportar favoritos en dos formatos a elegir por el usuario mediante un diálogo: JSON (formato propio) y HTML de marcadores (Netscape Bookmark, vía `GET /bookmarks/export`, compatible con Firefox/Chrome/Edge).
 - **FR-024**: La aplicación DEBE mantener la paleta de colores fija.
 - **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `Ctrl+F` (buscar), `Ctrl+,` (perfil), `Ctrl+Q` (salir), `Esc` (cerrar/minimizar).
 - **FR-026**: La aplicación DEBE permitir al usuario configurar el nivel de log.
@@ -190,7 +192,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - El sistema operativo es Windows 10/11 (prioridad), con soporte futuro para macOS y Linux
 - El navegador predeterminado del sistema está configurado correctamente
 - La API Key tiene permisos suficientes para realizar todas las operaciones necesarias
-- Los archivos JSON de importación siguen el formato esperado por la API
+- Los archivos HTML de marcadores para importación siguen el formato Netscape Bookmark estándar
 
 ## Open Questions
 
@@ -200,4 +202,4 @@ Ninguna por el momento. La especificación proporcionada es suficientemente deta
 
 - API REST de Favoritos debe estar accesible y documentada
 - Icono de la aplicación (logo simplificado para System Tray)
-- Definición del formato de archivo JSON para importación
+- Soporte del servidor para importación vía `POST /bookmarks/import` con archivos HTML (Netscape Bookmark)

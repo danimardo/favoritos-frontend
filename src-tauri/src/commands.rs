@@ -14,6 +14,7 @@ pub struct AppState {
 // ==================== Config Commands ====================
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigResponse {
     pub configured: bool,
     pub api_url: Option<String>,
@@ -236,6 +237,50 @@ pub fn favorites_export(app: AppHandle, json_data: String) -> Result<bool, Strin
     }
 }
 
+#[tauri::command]
+pub async fn favorites_export_html(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let client = get_api_client(&app)?;
+
+    tracing::info!("[Exportación HTML] Descargando marcadores del servidor...");
+
+    let html_bytes = client
+        .export_bookmarks_html()
+        .await
+        .map_err(|e| format!("Error al exportar desde el servidor: {}", e))?;
+
+    tracing::info!(
+        "[Exportación HTML] Recibidos {} bytes. Abriendo diálogo de guardado...",
+        html_bytes.len()
+    );
+
+    let file_path = app
+        .dialog()
+        .file()
+        .add_filter("HTML", &["html", "htm"])
+        .set_file_name("favoritos_export.html")
+        .set_title("Guardar Exportación de Marcadores")
+        .blocking_save_file();
+
+    match file_path {
+        Some(path) => {
+            let path_str = path.to_string();
+            tracing::info!("[Exportación HTML] Guardando en: {}", path_str);
+            std::fs::write(&path_str, &html_bytes).map_err(|e| {
+                tracing::error!("[Exportación HTML] Error al escribir: {}", e);
+                e.to_string()
+            })?;
+            tracing::info!("[Exportación HTML] Exportación completada");
+            Ok(true)
+        }
+        None => {
+            tracing::info!("[Exportación HTML] Cancelado por el usuario");
+            Ok(false)
+        }
+    }
+}
+
 // ==================== Folder Commands ====================
 
 #[tauri::command]
@@ -342,52 +387,99 @@ pub fn app_quit(app: AppHandle) -> Result<(), String> {
 // ==================== Import Commands ====================
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ImportResult {
     pub imported: usize,
+    pub updated: usize,
     pub skipped: usize,
+    pub total: usize,
     pub errors: Vec<String>,
 }
 
 #[tauri::command]
-pub async fn import_favorites(app: AppHandle, data: String) -> Result<ImportResult, String> {
+pub async fn import_favorites(
+    app: AppHandle,
+    file_bytes: Vec<u8>,
+    filename: String,
+    ia: bool,
+) -> Result<ImportResult, String> {
     let client = get_api_client(&app)?;
 
-    // Parse JSON data to ensure it's valid
-    let payload: serde_json::Value =
-        serde_json::from_str(&data).map_err(|e| format!("Formato JSON inválido: {}", e))?;
+    tracing::info!(
+        "[Importación] Iniciando importación de archivo: {} ({} bytes, ia: {})",
+        filename,
+        file_bytes.len(),
+        ia
+    );
 
-    // Call the bulk endpoint
-    match client.create_bookmarks_bulk(payload).await {
+    match client.import_bookmarks(file_bytes, filename, ia).await {
         Ok(result_data) => {
-            // Map the API response to our ImportResult struct
             let imported = result_data
                 .get("imported")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as usize;
+            let updated = result_data
+                .get("updated")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0) as usize;
             let skipped = result_data
                 .get("skipped")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0) as usize;
+            let total = result_data
+                .get("total")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as usize;
+
+            tracing::info!(
+                "[Importación] Resultado: {} importados, {} actualizados, {} omitidos, {} total",
+                imported,
+                updated,
+                skipped,
+                total
+            );
+
             let mut errors = Vec::new();
 
-            if let Some(skipped_urls) = result_data.get("skippedUrls").and_then(|v| v.as_array()) {
-                for url in skipped_urls {
-                    errors.push(format!(
-                        "Saltado: {}",
-                        url.as_str().unwrap_or("URL desconocida")
-                    ));
+            if skipped > 0 {
+                tracing::warn!(
+                    "[Importación] {} marcadores omitidos (posibles duplicados o errores de validación)",
+                    skipped
+                );
+                errors.push(format!(
+                    "{} marcadores omitidos (posibles duplicados o errores de validación). Consulta los logs del servidor para más detalles.",
+                    skipped
+                ));
+            }
+
+            // Log de campos adicionales no esperados en la respuesta
+            let known_keys = ["imported", "updated", "skipped", "total"];
+            if let Some(obj) = result_data.as_object() {
+                for (key, value) in obj {
+                    if !known_keys.contains(&key.as_str()) {
+                        tracing::debug!(
+                            "[Importación] Campo adicional en respuesta: {} = {}",
+                            key,
+                            value
+                        );
+                    }
                 }
             }
 
             Ok(ImportResult {
                 imported,
+                updated,
                 skipped,
+                total,
                 errors,
             })
         }
-        Err(e) => Err(format!(
-            "Error en el servidor durante la importación: {}",
-            e
-        )),
+        Err(e) => {
+            tracing::error!("[Importación] Error del servidor: {}", e);
+            Err(format!(
+                "Error en el servidor durante la importación: {}",
+                e
+            ))
+        }
     }
 }

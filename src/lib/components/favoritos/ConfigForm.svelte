@@ -3,14 +3,29 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { configuracion, currentUser } from '$lib/stores/configuracion';
-	import { LogOut, User, Mail, Shield, Settings2, Info, Loader2, CheckCircle2, Save } from 'lucide-svelte';
+	import { LogOut, User, Mail, Shield, Key, Settings2, Info, Loader2, CheckCircle2, Save } from 'lucide-svelte';
 	import * as Select from "$lib/components/ui/select";
 	import AuthForm from './AuthForm.svelte';
 
 	let apiUrl = $state($configuracion.apiUrl || 'http://localhost:3004/api/v1');
+	let apiKey = $state('');
 	let logLevel = $state($configuracion.logLevel || 'info');
 	let saving = $state(false);
 	let saveSuccess = $state(false);
+
+	// Re-sincronizar cuando el store se actualice (ej. si init() aún no había completado al montar)
+	let synced = $state(false);
+	$effect(() => {
+		if ($configuracion.ready && !synced) {
+			if ($configuracion.apiUrl) {
+				apiUrl = $configuracion.apiUrl;
+			}
+			if ($configuracion.logLevel) {
+				logLevel = $configuracion.logLevel;
+			}
+			synced = true;
+		}
+	});
 
 	const logLevels = [
 		{ value: "error", label: "Error (Mínimo)" },
@@ -34,7 +49,8 @@
 		saving = true;
 		saveSuccess = false;
 		try {
-			await configuracion.saveSettings(apiUrl, logLevel);
+			await configuracion.saveSettings(apiUrl, logLevel, apiKey.trim() || undefined);
+			apiKey = '';
 			saveSuccess = true;
 			setTimeout(() => {
 				saveSuccess = false;
@@ -96,14 +112,30 @@
 					<Label for="apiUrl" class="text-taupe font-semibold flex items-center gap-2">
 						<Shield class="w-4 h-4" /> Dirección del API (Servidor)
 					</Label>
-					<Input 
-						id="apiUrl" 
-						bind:value={apiUrl} 
+					<Input
+						id="apiUrl"
+						bind:value={apiUrl}
 						placeholder="http://tu-servidor:3004/api/v1"
-						class="bg-white border-silver focus:ring-taupe focus:border-taupe font-mono text-sm" 
+						class="bg-white border-silver focus:ring-taupe focus:border-taupe font-mono text-sm"
 					/>
 					<p class="text-[10px] text-grey-olive italic">
 						Modifica esta URL solo si has cambiado la dirección de tu servidor Favoritos.
+					</p>
+				</div>
+
+				<div class="space-y-2 pt-2">
+					<Label for="apiKey" class="text-taupe font-semibold flex items-center gap-2">
+						<Key class="w-4 h-4" /> API Key
+					</Label>
+					<Input
+						id="apiKey"
+						type="password"
+						bind:value={apiKey}
+						placeholder="Dejar vacío para mantener la actual"
+						class="bg-white border-silver focus:ring-taupe focus:border-taupe font-mono text-sm"
+					/>
+					<p class="text-[10px] text-grey-olive italic">
+						Solo rellena este campo si necesitas cambiar tu API Key. Déjalo vacío para conservar la actual.
 					</p>
 				</div>
 			</div>

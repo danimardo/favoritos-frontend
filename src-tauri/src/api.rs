@@ -282,32 +282,91 @@ impl ApiClient {
         }
     }
 
-    /// Create bookmarks in bulk
-    pub async fn create_bookmarks_bulk(
+    /// Import bookmarks from an HTML file (Netscape Bookmark format)
+    pub async fn import_bookmarks(
         &self,
-        payload: serde_json::Value,
+        file_bytes: Vec<u8>,
+        filename: String,
+        ia: bool,
     ) -> Result<serde_json::Value, ApiError> {
-        let url = format!("{}/bookmarks/bulk", self.base_url);
-        
-        tracing::debug!("Importación masiva en: {}", url);
-        
+        let url = format!("{}/bookmarks/import", self.base_url);
+
+        tracing::info!(
+            "[Importación] Enviando archivo HTML: {} ({} bytes, ia: {})",
+            filename,
+            file_bytes.len(),
+            ia
+        );
+
+        let file_part = reqwest::multipart::Part::bytes(file_bytes)
+            .file_name(filename.clone())
+            .mime_str("text/html")
+            .map_err(|e| ApiError::Message(format!("Error creando part multipart: {}", e)))?;
+
+        let form = reqwest::multipart::Form::new()
+            .part("file", file_part)
+            .text("ia", ia.to_string());
+
         let response = self
             .client
             .post(&url)
             .header("X-API-Key", &self.api_key)
-            .json(&payload)
+            .multipart(form)
             .send()
             .await?;
 
         if response.status().is_success() {
-            let data: ApiResponse<serde_json::Value> = response.json().await?;
-            data.data.ok_or_else(|| ApiError::Message("No data returned from bulk import".to_string()))
+            let raw_body = response.text().await.map_err(|e| {
+                ApiError::Message(format!("Error al leer respuesta de importación: {}", e))
+            })?;
+            tracing::debug!("[Importación] Respuesta del servidor: {}", raw_body);
+
+            let api_response: ApiResponse<serde_json::Value> =
+                serde_json::from_str(&raw_body).map_err(|e| {
+                    ApiError::Message(format!("Error al parsear respuesta de importación: {}", e))
+                })?;
+            api_response
+                .data
+                .ok_or_else(|| ApiError::Message("No data returned from import".to_string()))
         } else {
             let status = response.status();
             let error_body = response.text().await.unwrap_or_default();
-            tracing::error!("Error en importación masiva: {} - {}", status, error_body);
+            tracing::error!("[Importación] Error del servidor: {} - {}", status, error_body);
             Err(ApiError::Message(format!(
-                "Bulk import failed: {} - {}",
+                "Import failed: {} - {}",
+                status, error_body
+            )))
+        }
+    }
+
+    /// Export bookmarks as Netscape Bookmark HTML from the server
+    pub async fn export_bookmarks_html(&self) -> Result<Vec<u8>, ApiError> {
+        let url = format!("{}/bookmarks/export", self.base_url);
+
+        tracing::info!("[Exportación] Solicitando exportación HTML desde: {}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let bytes = response.bytes().await.map_err(|e| {
+                ApiError::Message(format!("Error al leer respuesta de exportación: {}", e))
+            })?;
+            tracing::info!(
+                "[Exportación] HTML recibido: {} bytes",
+                bytes.len()
+            );
+            Ok(bytes.to_vec())
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("[Exportación] Error del servidor: {} - {}", status, error_body);
+            Err(ApiError::Message(format!(
+                "Export failed: {} - {}",
                 status, error_body
             )))
         }

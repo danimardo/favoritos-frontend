@@ -67,7 +67,9 @@ export interface ConfigResponse {
 
 export interface ImportResult {
 	imported: number;
+	updated: number;
 	skipped: number;
+	total: number;
 	errors: string[];
 }
 
