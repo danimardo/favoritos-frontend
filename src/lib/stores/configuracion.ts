@@ -135,7 +135,8 @@ function createConfiguracionStore() {
 			update((s) => ({ ...s, loading: true, error: null }));
 			try {
 				await invoke('config_clear');
-				set({ ...initialState, ready: true });
+				// Conservar apiUrl y logLevel tras cerrar sesión
+				update((s) => ({ ...initialState, ready: true, apiUrl: s.apiUrl, logLevel: s.logLevel }));
 			} catch (error) {
 				update((s) => ({
 					...s,
@@ -146,10 +147,10 @@ function createConfiguracionStore() {
 			}
 		},
 
-		async saveSettings(apiUrl: string, logLevel: string) {
+		async saveSettings(apiUrl: string, logLevel: string, apiKey?: string) {
 			update((s) => ({ ...s, loading: true, error: null }));
 			try {
-				await invoke('config_update_settings', { apiUrl, logLevel });
+				await invoke('config_update_settings', { apiUrl, apiKey: apiKey || null, logLevel });
 				update((s) => ({
 					...s,
 					apiUrl,

@@ -57,13 +57,14 @@ impl ConfigManager {
         let store = Self::get_or_load_store(app).ok()?;
 
         let api_url = store.get("api_url")?.as_str()?.to_string();
-        let api_key_enc = store.get("api_key")?.as_str()?.to_string();
+        let api_key = store
+            .get("api_key")
+            .and_then(|v| v.as_str().map(|s| ApiConfig::decrypt_key(s)))
+            .unwrap_or_default();
         let log_level = store
             .get("log_level")
             .and_then(|v| v.as_str().map(|s| s.to_string()))
             .unwrap_or_else(|| "info".to_string());
-
-        let api_key = ApiConfig::decrypt_key(&api_key_enc);
 
         tracing::info!("Configuración recuperada con éxito");
         Some(ApiConfig::new(api_url, api_key, log_level))
@@ -87,9 +88,8 @@ impl ConfigManager {
 
     pub fn clear(app: &AppHandle) -> Result<(), String> {
         let store = Self::get_or_load_store(app)?;
-        store.delete("api_url");
+        // Solo borrar la sesión (api_key), conservando api_url y log_level
         store.delete("api_key");
-        store.delete("log_level");
         store.save().map_err(|e| e.to_string())
     }
 

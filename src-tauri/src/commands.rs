@@ -47,15 +47,20 @@ pub fn config_save(
 pub fn config_update_settings(
     app: AppHandle,
     api_url: String,
+    api_key: Option<String>,
     log_level: String,
 ) -> Result<(), String> {
-    let mut config = ConfigManager::get(&app).ok_or_else(|| {
-        "No existe configuración previa. Debes iniciar sesión primero.".to_string()
-    })?;
-
-    // Actualizar los ajustes globales
-    config.api_url = api_url;
-    config.log_level = log_level;
+    let config = match ConfigManager::get(&app) {
+        Some(mut existing) => {
+            existing.api_url = api_url;
+            if let Some(key) = api_key {
+                existing.api_key = key;
+            }
+            existing.log_level = log_level;
+            existing
+        }
+        None => ApiConfig::new(api_url, api_key.unwrap_or_default(), log_level),
+    };
 
     ConfigManager::save(&app, &config)
 }
