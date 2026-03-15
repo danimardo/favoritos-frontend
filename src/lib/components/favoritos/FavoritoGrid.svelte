@@ -17,13 +17,7 @@
 	let showEditDialog = $state(false);
 	let showDeleteDialog = $state(false);
 	let sentinelRef = $state<HTMLDivElement | null>(null);
-	let scrollContainer = $state<Element | null>(null);
 	let debounceTimer: ReturnType<typeof setTimeout>;
-
-	onMount(() => {
-		// Find the scrollable parent (<main> in layout)
-		scrollContainer = document.querySelector('main.overflow-y-auto');
-	});
 
 	export function focusSearch() {
 		if (searchInput) searchInput.focus();
@@ -67,19 +61,33 @@
 		favoritos.executeSearch();
 	}
 
-	// IntersectionObserver for infinite scroll
+	// Log state for debugging pagination
 	$effect(() => {
-		if (sentinelRef && scrollContainer) {
+		console.log(`[Grid] hasMore=${$favoritos.hasMore}, items=${$favoritos.items.length}, total=${$favoritos.total}, page=${$favoritos.page}, totalPages=${$favoritos.totalPages}`);
+	});
+
+	// IntersectionObserver for infinite scroll (viewport-based)
+	$effect(() => {
+		if (sentinelRef) {
+			console.log('[Grid] Observer enganchado al sentinel');
 			const observer = new IntersectionObserver((entries) => {
-				if (entries[0].isIntersecting && $favoritos.hasMore && !$favoritos.loadingMore && !$favoritos.loading) {
-					console.log('[Grid] Sentinel visible, cargando siguiente página...');
+				const entry = entries[0];
+				console.log(`[Grid] Sentinel intersecting=${entry.isIntersecting}, hasMore=${$favoritos.hasMore}, loadingMore=${$favoritos.loadingMore}`);
+				if (entry.isIntersecting && $favoritos.hasMore && !$favoritos.loadingMore && !$favoritos.loading) {
+					console.log('[Grid] Cargando siguiente página...');
 					favoritos.fetchPage(false);
 				}
-			}, { root: scrollContainer, rootMargin: '300px' });
+			}, { rootMargin: '300px' });
 			observer.observe(sentinelRef);
 			return () => observer.disconnect();
 		}
 	});
+
+	function loadMore() {
+		if ($favoritos.hasMore && !$favoritos.loadingMore) {
+			favoritos.fetchPage(false);
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -244,9 +252,20 @@
 		</div>
 	{/if}
 
-	<!-- Sentinel para scroll infinito -->
-	{#if $favoritos.hasMore}
-		<div bind:this={sentinelRef} class="h-4"></div>
+	<!-- Paginación: sentinel para auto-scroll + botón manual -->
+	{#if $favoritos.hasMore && !$favoritos.loading}
+		<div bind:this={sentinelRef} class="h-1"></div>
+		{#if !$favoritos.loadingMore}
+			<div class="flex justify-center py-4">
+				<Button
+					variant="outline"
+					onclick={loadMore}
+					class="border-taupe/30 text-taupe hover:bg-taupe/10 font-semibold px-8"
+				>
+					Cargar más ({$favoritos.items.length} de {$favoritos.total})
+				</Button>
+			</div>
+		{/if}
 	{/if}
 </div>
 
