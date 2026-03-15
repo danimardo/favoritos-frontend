@@ -332,37 +332,22 @@ function createFavoritosStore() {
 
 export const favoritos = createFavoritosStore();
 
-// Derived store for folder counts (from loaded items - approximate)
+// Derived store for folder counts (real counts from API's bookmarkCount field)
 export const folderCounts = derived(favoritos, ($favs) => {
 	const counts: Record<string, number> = {};
-	$favs.items.forEach(item => {
-		const fId = item.folderId || item.folder?.id;
-		if (fId) {
-			counts[fId] = (counts[fId] || 0) + 1;
-		}
+	$favs.folders.forEach(folder => {
+		counts[folder.id] = folder.bookmarkCount ?? 0;
 	});
 	return counts;
 });
 
-// Derived store for tag counts
-// Uses allTags from the API as the complete list, with counts from loaded favorites
+// Derived store for tag counts (real counts from API's bookmarkCount field)
 export const tagCounts = derived(favoritos, ($favs) => {
 	const counts: Record<string, number> = {};
-
-	// Count tags from loaded favorites
-	$favs.items.forEach(item => {
-		item.tags?.forEach(t => {
-			const name = typeof t === 'string' ? t : t.name;
-			if (name) counts[name] = (counts[name] || 0) + 1;
-		});
-	});
-
-	// Include all tags from the API (even those with 0 favorites loaded)
 	$favs.allTags.forEach(tag => {
-		if (tag.name && !(tag.name in counts)) {
-			counts[tag.name] = 0;
+		if (tag.name) {
+			counts[tag.name] = tag.bookmarkCount ?? 0;
 		}
 	});
-
 	return counts;
 });

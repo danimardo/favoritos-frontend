@@ -589,33 +589,75 @@ impl ApiClient {
         }
     }
 
-    /// Get all folders
-    pub async fn get_folders(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        let url = format!("{}/folders?limit=1000", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .header("X-API-Key", &self.api_key)
-            .send()
-            .await?;
+    /// Paginate an endpoint automatically until all items are fetched
+    async fn paginate_all(&self, endpoint: &str) -> Result<Vec<serde_json::Value>, ApiError> {
+        let mut all_items = Vec::new();
+        let mut page = 1u32;
+        let page_size = 100;
 
-        if response.status().is_success() {
+        loop {
+            let url = format!("{}/{}?page={}&pageSize={}", self.base_url, endpoint, page, page_size);
+            let response = self
+                .client
+                .get(&url)
+                .header("X-API-Key", &self.api_key)
+                .send()
+                .await?;
+
+            if !response.status().is_success() {
+                return Err(ApiError::Message(format!(
+                    "Failed to get {}: {}",
+                    endpoint,
+                    response.status()
+                )));
+            }
+
             let data: ApiResponse<serde_json::Value> = response.json().await?;
+            let mut page_items = Vec::new();
+            let mut total_pages = 1u32;
+
             if let Some(inner_data) = data.data {
+                // Format: { data: [...], pagination: { totalPages, ... } }
                 if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
-                    return Ok(list.iter().cloned().collect());
+                    page_items = list.iter().cloned().collect();
+                    if let Some(pagination) = inner_data.get("pagination") {
+                        total_pages = pagination
+                            .get("totalPages")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(1) as u32;
+                    }
                 }
-                if let Some(list) = inner_data.as_array() {
-                    return Ok(list.iter().cloned().collect());
+                // Format: direct array (no pagination wrapper)
+                else if let Some(list) = inner_data.as_array() {
+                    page_items = list.iter().cloned().collect();
+                    // No pagination info = single page
+                    total_pages = 1;
                 }
             }
-            Ok(Vec::new())
-        } else {
-            Err(ApiError::Message(format!(
-                "Failed to get folders: {}",
-                response.status()
-            )))
+
+            tracing::info!(
+                "[API] {}: page {}/{}, got {} items",
+                endpoint,
+                page,
+                total_pages,
+                page_items.len()
+            );
+
+            all_items.extend(page_items);
+
+            if page >= total_pages {
+                break;
+            }
+            page += 1;
         }
+
+        tracing::info!("[API] {}: total {} items loaded", endpoint, all_items.len());
+        Ok(all_items)
+    }
+
+    /// Get all folders (paginates automatically to fetch all)
+    pub async fn get_folders(&self) -> Result<Vec<serde_json::Value>, ApiError> {
+        self.paginate_all("folders").await
     }
 
     /// Create a new folder
@@ -642,33 +684,9 @@ impl ApiClient {
         }
     }
 
-    /// Get all tags
+    /// Get all tags (paginates automatically to fetch all)
     pub async fn get_tags(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        let url = format!("{}/tags?limit=1000", self.base_url);
-        let response = self
-            .client
-            .get(&url)
-            .header("X-API-Key", &self.api_key)
-            .send()
-            .await?;
-
-        if response.status().is_success() {
-            let data: ApiResponse<serde_json::Value> = response.json().await?;
-            if let Some(inner_data) = data.data {
-                if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
-                    return Ok(list.iter().cloned().collect());
-                }
-                if let Some(list) = inner_data.as_array() {
-                    return Ok(list.iter().cloned().collect());
-                }
-            }
-            Ok(Vec::new())
-        } else {
-            Err(ApiError::Message(format!(
-                "Failed to get tags: {}",
-                response.status()
-            )))
-        }
+        self.paginate_all("tags").await
     }
 
     /// Create a new tag

@@ -30,6 +30,7 @@ export interface Carpeta {
 	id: string;
 	name: string;
 	order: number;
+	bookmarkCount?: number;
 	createdAt: string;
 }
 
@@ -37,6 +38,7 @@ export interface Etiqueta {
 	id: string;
 	name: string;
 	color?: string;
+	bookmarkCount?: number;
 }
 
 export interface User {
