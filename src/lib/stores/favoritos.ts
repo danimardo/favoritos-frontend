@@ -1,5 +1,5 @@
 import { writable, get, derived } from 'svelte/store';
-import type { Favorito, FavoritoInput, FavoritoUpdate, Carpeta } from '$lib/types/api';
+import type { Favorito, FavoritoInput, FavoritoUpdate, Carpeta, Etiqueta } from '$lib/types/api';
 import { databaseService } from '$lib/services/database';
 import { apiClient } from '$lib/services/api-client';
 import { tauriNotifications } from '$lib/services/tauri';
@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 interface FavoritosState {
 	items: Favorito[];
 	folders: Carpeta[];
+	allTags: Etiqueta[];
 	loading: boolean;
 	error: string | null;
 	page: number;
@@ -21,6 +22,7 @@ interface FavoritosState {
 const initialState: FavoritosState = {
 	items: [],
 	folders: [],
+	allTags: [],
 	loading: false,
 	error: null,
 	page: 1,
@@ -40,7 +42,10 @@ function createFavoritosStore() {
 		async fetchAll() {
 			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
 			try {
-				const folders = await apiClient.getFolders();
+				const [folders, allTags] = await Promise.all([
+					apiClient.getFolders(),
+					apiClient.getTags()
+				]);
 				let allItems: Favorito[] = [];
 				let currentPage = 1;
 				let hasMore = true;
@@ -59,6 +64,7 @@ function createFavoritosStore() {
 							...s,
 							items,
 							folders,
+							allTags,
 							page: currentPage,
 							hasMore: pageItems.length >= 100
 						}));
@@ -68,12 +74,13 @@ function createFavoritosStore() {
 				}
 
 				const items = allItems.filter(item => !item.isArchived && !item.isRead);
-				console.log(`[Favoritos] Carga completa: ${items.length} favoritos activos de ${allItems.length} totales.`);
+				console.log(`[Favoritos] Carga completa: ${items.length} favoritos activos de ${allItems.length} totales, ${allTags.length} etiquetas.`);
 
 				update((s) => ({
 					...s,
 					items,
 					folders,
+					allTags,
 					loading: false,
 					hasMore: false
 				}));
@@ -315,14 +322,25 @@ export const folderCounts = derived(favoritos, ($favs) => {
 	return counts;
 });
 
-// Derived store for tag counts (sorted by count desc)
+// Derived store for tag counts
+// Uses allTags from the API as the complete list, with counts from loaded favorites
 export const tagCounts = derived(favoritos, ($favs) => {
 	const counts: Record<string, number> = {};
+
+	// Count tags from loaded favorites
 	$favs.items.forEach(item => {
 		item.tags?.forEach(t => {
 			const name = typeof t === 'string' ? t : t.name;
 			if (name) counts[name] = (counts[name] || 0) + 1;
 		});
 	});
+
+	// Include all tags from the API (even those with 0 favorites loaded)
+	$favs.allTags.forEach(tag => {
+		if (tag.name && !(tag.name in counts)) {
+			counts[tag.name] = 0;
+		}
+	});
+
 	return counts;
 });

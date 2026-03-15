@@ -39,8 +39,8 @@ export function filterFavoritos(favorites: Favorito[], query: string): Favorito[
 		const title = normalize(f.title ?? '');
 		const url = normalize(f.url ?? '');
 		const description = normalize(f.description ?? '');
-		const folder = normalize(f.folder ?? '');
-		const tags = f.tags?.map((t) => normalize(t)) ?? [];
+		const folder = normalize(typeof f.folder === 'string' ? f.folder : f.folder?.name ?? '');
+		const tags = f.tags?.map((t) => normalize(typeof t === 'string' ? t : t.name ?? '')) ?? [];
 
 		return (
 			title.includes(normalizedQuery) ||

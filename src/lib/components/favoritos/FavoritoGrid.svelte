@@ -66,20 +66,6 @@
 		})
 	);
 
-	let observer: IntersectionObserver;
-	let sentinel = $state<HTMLElement | null>(null);
-
-	$effect(() => {
-		if (sentinel) {
-			observer = new IntersectionObserver((entries) => {
-				if (entries[0].isIntersecting && $favoritos.hasMore && !$favoritos.loading) {
-					favoritos.fetchNextPage();
-				}
-			}, { threshold: 0.1 });
-			observer.observe(sentinel);
-			return () => observer.disconnect();
-		}
-	});
 </script>
 
 <div class="space-y-6">
@@ -234,7 +220,6 @@
 		</div>
 	{/if}
 
-	<div bind:this={sentinel} class="h-10"></div>
 </div>
 
 {#if selectedFavorito}
