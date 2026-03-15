@@ -17,7 +17,13 @@
 	let showEditDialog = $state(false);
 	let showDeleteDialog = $state(false);
 	let sentinelRef = $state<HTMLDivElement | null>(null);
+	let scrollContainer = $state<Element | null>(null);
 	let debounceTimer: ReturnType<typeof setTimeout>;
+
+	onMount(() => {
+		// Find the scrollable parent (<main> in layout)
+		scrollContainer = document.querySelector('main.overflow-y-auto');
+	});
 
 	export function focusSearch() {
 		if (searchInput) searchInput.focus();
@@ -63,12 +69,13 @@
 
 	// IntersectionObserver for infinite scroll
 	$effect(() => {
-		if (sentinelRef) {
+		if (sentinelRef && scrollContainer) {
 			const observer = new IntersectionObserver((entries) => {
 				if (entries[0].isIntersecting && $favoritos.hasMore && !$favoritos.loadingMore && !$favoritos.loading) {
+					console.log('[Grid] Sentinel visible, cargando siguiente página...');
 					favoritos.fetchPage(false);
 				}
-			}, { rootMargin: '200px' });
+			}, { root: scrollContainer, rootMargin: '300px' });
 			observer.observe(sentinelRef);
 			return () => observer.disconnect();
 		}

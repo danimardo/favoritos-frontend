@@ -220,6 +220,11 @@ impl ApiClient {
             if let Some(inner_data) = data.data {
                 // Extract pagination metadata
                 let pagination = inner_data.get("pagination");
+                if let Some(p) = &pagination {
+                    tracing::info!("[API] get_favorites pagination raw: {}", p);
+                } else {
+                    tracing::warn!("[API] get_favorites: no pagination field found in response");
+                }
                 let total = pagination
                     .and_then(|p| p.get("total"))
                     .and_then(|v| v.as_u64())

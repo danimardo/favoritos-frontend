@@ -89,7 +89,8 @@ function createFavoritosStore() {
 
 				console.log(`[Favoritos] Cargando página ${pageToLoad}...`, params);
 				const result = await apiClient.getFavorites(params);
-				console.log(`[Favoritos] Página ${pageToLoad}: ${result.items.length} items (total: ${result.total}, pages: ${result.totalPages})`);
+				const hasMorePages = pageToLoad < result.totalPages;
+				console.log(`[Favoritos] Página ${pageToLoad}: ${result.items.length} items (total: ${result.total}, pages: ${result.totalPages}, hasMore: ${hasMorePages})`);
 
 				update((s) => ({
 					...s,

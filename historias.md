@@ -116,10 +116,11 @@
 - Se ignoran los campos `isArchived` e `isRead` en el frontend para simplificar la interfaz.
 - El campo `visitCount` se actualiza automáticamente al abrir un link desde la app.
 
-### 4.2 Rendimiento
-- **Paginación del Servidor**: Los favoritos se cargan bajo demanda en páginas de 50 elementos mediante scroll infinito (IntersectionObserver). El store gestiona `page`, `total`, `totalPages`, `hasMore` y `loadingMore` para controlar la paginación.
+### 4.2 Rendimiento y Datos
+- **Paginación del Servidor**: Los favoritos se cargan bajo demanda en páginas de 50 elementos mediante scroll infinito (IntersectionObserver con `root` = contenedor `<main>`). El store gestiona `page`, `total`, `totalPages`, `hasMore` y `loadingMore` para controlar la paginación. Se muestra "Mostrando X de Y favoritos" como indicador.
 - **Búsqueda del Servidor**: La búsqueda se ejecuta en el servidor (parámetro `search` de la API) con debounce de 400ms, operando sobre toda la base de datos. El filtrado por carpeta y etiqueta también se delega al servidor (parámetros `folder` y `tags`).
 - **Detección de Duplicados**: Cuando el servidor responde 409 Conflict al crear un favorito, la aplicación busca el duplicado en el servidor vía API (`getFavorites({ search: url })`) en lugar de buscar solo entre los ítems cargados localmente.
+- **Carpetas y Etiquetas**: Se cargan TODAS desde los endpoints `/folders/stats` y `/tags/stats` (con fallback a paginación estándar). Incluyen `bookmarkCount` real de la BBDD. En la sidebar se muestran las 30 más usadas (ordenadas por `bookmarkCount` descendente); al buscar, se filtra sobre la lista completa.
 - **Normalización**: Todas las búsquedas y filtros locales (sidebar) son insensibles a acentos/diacríticos y mayúsculas/minúsculas (normalización Unicode NFD).
 
 ---
