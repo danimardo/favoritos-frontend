@@ -228,12 +228,13 @@ impl ApiClient {
                     tracing::info!("[API] get_favorites inner_data keys: {:?}", keys);
                 }
 
-                // Extract pagination metadata
-                let pagination = inner_data.get("pagination");
+                // Extract pagination metadata (API uses "meta" or "pagination")
+                let pagination = inner_data.get("pagination")
+                    .or_else(|| inner_data.get("meta"));
                 if let Some(p) = &pagination {
-                    tracing::info!("[API] get_favorites pagination raw: {}", p);
+                    tracing::info!("[API] get_favorites pagination/meta raw: {}", p);
                 } else {
-                    tracing::warn!("[API] get_favorites: no pagination field in inner_data");
+                    tracing::warn!("[API] get_favorites: no pagination/meta field in inner_data");
                 }
                 let total = pagination
                     .and_then(|p| p.get("total"))
@@ -635,10 +636,10 @@ impl ApiClient {
             let mut total_pages = 1u32;
 
             if let Some(inner_data) = data.data {
-                // Format: { data: [...], pagination: { totalPages|pages, ... } }
+                // Format: { data: [...], pagination|meta: { totalPages|pages, ... } }
                 if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
                     page_items = list.iter().cloned().collect();
-                    if let Some(pagination) = inner_data.get("pagination") {
+                    if let Some(pagination) = inner_data.get("pagination").or_else(|| inner_data.get("meta")) {
                         total_pages = pagination
                             .get("totalPages")
                             .or_else(|| pagination.get("pages"))
