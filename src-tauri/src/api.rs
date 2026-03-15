@@ -612,17 +612,21 @@ impl ApiClient {
                 )));
             }
 
-            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            let raw_text = response.text().await?;
+            let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
+                .map_err(|e| ApiError::Message(format!("JSON parse error for {}: {}", endpoint, e)))?;
+
             let mut page_items = Vec::new();
             let mut total_pages = 1u32;
 
             if let Some(inner_data) = data.data {
-                // Format: { data: [...], pagination: { totalPages, ... } }
+                // Format: { data: [...], pagination: { totalPages|pages, ... } }
                 if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
                     page_items = list.iter().cloned().collect();
                     if let Some(pagination) = inner_data.get("pagination") {
                         total_pages = pagination
                             .get("totalPages")
+                            .or_else(|| pagination.get("pages"))
                             .and_then(|v| v.as_u64())
                             .unwrap_or(1) as u32;
                     }
@@ -630,28 +634,28 @@ impl ApiClient {
                 // Format: direct array (no pagination wrapper)
                 else if let Some(list) = inner_data.as_array() {
                     page_items = list.iter().cloned().collect();
-                    // No pagination info = single page
                     total_pages = 1;
                 }
             }
 
             tracing::info!(
-                "[API] {}: page {}/{}, got {} items",
+                "[API] paginate_all {}: page {}/{}, got {} items",
                 endpoint,
                 page,
                 total_pages,
                 page_items.len()
             );
 
+            let is_empty = page_items.is_empty();
             all_items.extend(page_items);
 
-            if page >= total_pages {
+            if page >= total_pages || is_empty {
                 break;
             }
             page += 1;
         }
 
-        tracing::info!("[API] {}: total {} items loaded", endpoint, all_items.len());
+        tracing::info!("[API] paginate_all {}: total {} items loaded", endpoint, all_items.len());
         Ok(all_items)
     }
 
