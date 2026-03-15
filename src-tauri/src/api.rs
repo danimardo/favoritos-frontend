@@ -185,16 +185,31 @@ impl ApiClient {
             .await?;
 
         if response.status().is_success() {
-            let data: ApiResponse<serde_json::Value> = response.json().await?;
+            let raw_text = response.text().await?;
+            tracing::debug!("[API] get_favorites page={:?} limit={:?} response_len={}", page, limit, raw_text.len());
+
+            let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
+                .map_err(|e| ApiError::Message(format!("JSON parse error: {}", e)))?;
+
             if let Some(inner_data) = data.data {
-                // If it's the nested structure { data: [], meta: {} }
+                // Log pagination metadata if present
+                if let Some(pagination) = inner_data.get("pagination") {
+                    tracing::info!("[API] Pagination: {}", pagination);
+                }
+
+                // If it's the nested structure { data: [], pagination: {} }
                 if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                    tracing::info!("[API] get_favorites page={:?}: {} items returned", page, list.len());
                     return Ok(list.iter().cloned().collect());
                 }
                 // If it's a direct array
                 if let Some(list) = inner_data.as_array() {
+                    tracing::info!("[API] get_favorites page={:?}: {} items (direct array)", page, list.len());
                     return Ok(list.iter().cloned().collect());
                 }
+
+                tracing::warn!("[API] get_favorites: unexpected data structure: {}",
+                    serde_json::to_string(&inner_data).unwrap_or_default().chars().take(500).collect::<String>());
             }
             Ok(Vec::new())
         } else {

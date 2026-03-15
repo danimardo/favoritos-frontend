@@ -35,11 +35,17 @@ const initialState: FavoritosState = {
 
 function createFavoritosStore() {
 	const { subscribe, set, update } = writable<FavoritosState>(initialState);
+	let fetchInProgress = false;
 
 	return {
 		subscribe,
 
 		async fetchAll() {
+			if (fetchInProgress) {
+				console.log('[Favoritos] fetchAll ya en curso, ignorando llamada duplicada');
+				return;
+			}
+			fetchInProgress = true;
 			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
 			try {
 				const [folders, allTags] = await Promise.all([
@@ -53,13 +59,16 @@ function createFavoritosStore() {
 				while (hasMore) {
 					console.log(`[Favoritos] Cargando página ${currentPage}...`);
 					const pageItems = await apiClient.getFavorites(currentPage, 100);
+					console.log(`[Favoritos] Página ${currentPage}: ${pageItems?.length ?? 0} items recibidos`);
 
 					if (!pageItems || pageItems.length === 0) {
+						console.log(`[Favoritos] Página ${currentPage}: vacía, fin de la paginación`);
 						hasMore = false;
 					} else {
 						allItems = [...allItems, ...pageItems];
 						// Actualizar el store progresivamente para que el usuario vea datos
 						const items = allItems.filter(item => !item.isArchived && !item.isRead);
+						console.log(`[Favoritos] Acumulados: ${allItems.length} totales, ${items.length} activos (filtrados isArchived/isRead)`);
 						update((s) => ({
 							...s,
 							items,
@@ -95,6 +104,8 @@ function createFavoritosStore() {
 					update((s) => ({ ...s, loading: false, error: errorMsg }));
 					await tauriNotifications.showError(`Error de conexión: ${errorMsg}`);
 				}
+			} finally {
+				fetchInProgress = false;
 			}
 		},
 
