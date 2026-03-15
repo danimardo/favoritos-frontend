@@ -72,6 +72,18 @@
 	<!-- Header Sidebar -->
 	<div class="p-6 border-b border-white/5 bg-black/5">
 		<h2 class="text-xs font-bold uppercase tracking-widest text-parchment/40">Navegación</h2>
+		{#if $favoritos.loading}
+			<div class="flex items-center gap-2 mt-2">
+				<div class="w-3 h-3 border-2 border-parchment/20 border-t-parchment/60 rounded-full animate-spin"></div>
+				<span class="text-[10px] text-parchment/40">
+					{#if $favoritos.items.length > 0}
+						Sincronizando... {$favoritos.items.length}
+					{:else}
+						Cargando...
+					{/if}
+				</span>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Contenido con scroll -->

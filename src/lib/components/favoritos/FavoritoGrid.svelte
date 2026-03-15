@@ -223,7 +223,13 @@
 		<div class="flex justify-center py-8">
 			<div class="flex items-center gap-3 text-taupe bg-white px-4 py-2 rounded-full shadow-sm border border-silver/30">
 				<div class="w-4 h-4 border-2 border-taupe/20 border-t-taupe rounded-full animate-spin"></div>
-				<span class="text-sm font-medium">Cargando datos...</span>
+				<span class="text-sm font-medium">
+					{#if $favoritos.items.length > 0}
+						Sincronizando... {$favoritos.items.length} favoritos cargados
+					{:else}
+						Cargando datos...
+					{/if}
+				</span>
 			</div>
 		</div>
 	{/if}

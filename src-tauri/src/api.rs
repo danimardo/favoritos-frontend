@@ -529,7 +529,7 @@ impl ApiClient {
 
     /// Get all folders
     pub async fn get_folders(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        let url = format!("{}/folders", self.base_url);
+        let url = format!("{}/folders?limit=1000", self.base_url);
         let response = self
             .client
             .get(&url)
@@ -582,7 +582,7 @@ impl ApiClient {
 
     /// Get all tags
     pub async fn get_tags(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        let url = format!("{}/tags", self.base_url);
+        let url = format!("{}/tags?limit=1000", self.base_url);
         let response = self
             .client
             .get(&url)
