@@ -50,23 +50,25 @@
 		}
 	}
 
-	// Sorted tags by count descending, filtered by tagFilter
-	let sortedTags = $derived(
-		Object.entries($tagCounts)
-			.filter(([name]) => {
-				if (!tagFilter.trim()) return true;
-				return normalize(name).includes(normalize(tagFilter.trim()));
-			})
-			.sort((a, b) => b[1] - a[1])
-	);
+	const SIDEBAR_LIMIT = 30;
 
-	// Filtered folders
-	let filteredFolders = $derived(
-		$favoritos.folders.filter(folder => {
-			if (!folderFilter.trim()) return true;
-			return normalize(folder.name).includes(normalize(folderFilter.trim()));
-		})
-	);
+	// Tags: sorted by bookmarkCount desc, filtered by search, limited when not searching
+	let sortedTags = $derived.by(() => {
+		const all = Object.entries($tagCounts).sort((a, b) => b[1] - a[1]);
+		const query = tagFilter.trim();
+		if (!query) return { items: all.slice(0, SIDEBAR_LIMIT), total: all.length, filtered: false };
+		const filtered = all.filter(([name]) => normalize(name).includes(normalize(query)));
+		return { items: filtered, total: all.length, filtered: true };
+	});
+
+	// Folders: sorted by bookmarkCount desc, filtered by search, limited when not searching
+	let sortedFolders = $derived.by(() => {
+		const all = [...$favoritos.folders].sort((a, b) => (b.bookmarkCount ?? 0) - (a.bookmarkCount ?? 0));
+		const query = folderFilter.trim();
+		if (!query) return { items: all.slice(0, SIDEBAR_LIMIT), total: all.length, filtered: false };
+		const filtered = all.filter(folder => normalize(folder.name).includes(normalize(query)));
+		return { items: filtered, total: all.length, filtered: true };
+	});
 </script>
 
 <div class="flex flex-col h-screen bg-taupe text-parchment w-64 border-r border-white/10 shadow-xl overflow-hidden">
@@ -125,7 +127,7 @@
 				<input
 					type="text"
 					bind:value={folderFilter}
-					placeholder="Filtrar carpetas..."
+					placeholder="Buscar en {sortedFolders.total} carpetas..."
 					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
 				/>
 				{#if folderFilter}
@@ -137,7 +139,7 @@
 					</button>
 				{/if}
 			</div>
-			{#each filteredFolders as folder}
+			{#each sortedFolders.items as folder}
 				<button
 					onclick={() => selectFolder(folder.id)}
 					class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === folder.id ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
@@ -158,9 +160,14 @@
 				</button>
 			{:else}
 				<div class="px-3 py-4 text-center">
-					<p class="text-xs text-parchment/20 italic">No hay carpetas</p>
+					<p class="text-xs text-parchment/20 italic">{folderFilter ? 'Sin resultados' : 'No hay carpetas'}</p>
 				</div>
 			{/each}
+			{#if !sortedFolders.filtered && sortedFolders.total > SIDEBAR_LIMIT}
+				<p class="text-[10px] text-parchment/20 text-center py-1 italic">
+					Mostrando {SIDEBAR_LIMIT} de {sortedFolders.total} — usa el buscador para ver más
+				</p>
+			{/if}
 		{/if}
 
 		<!-- Sección Etiquetas (colapsable) -->
@@ -175,7 +182,7 @@
 			{/if}
 			<p class="text-[10px] font-bold uppercase text-parchment/30 tracking-wider">Etiquetas</p>
 			{#if !tagsExpanded}
-				<span class="text-[10px] text-parchment/20 ml-auto">{sortedTags.length}</span>
+				<span class="text-[10px] text-parchment/20 ml-auto">{$favoritos.allTags.length}</span>
 			{/if}
 		</button>
 
@@ -185,7 +192,7 @@
 				<input
 					type="text"
 					bind:value={tagFilter}
-					placeholder="Filtrar etiquetas..."
+					placeholder="Buscar en {sortedTags.total} etiquetas..."
 					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
 				/>
 				{#if tagFilter}
@@ -197,7 +204,7 @@
 					</button>
 				{/if}
 			</div>
-			{#each sortedTags as [tagName, count]}
+			{#each sortedTags.items as [tagName, count]}
 				<button
 					onclick={() => selectTag(tagName)}
 					class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group {$favoritos.selectedTag === tagName ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
@@ -212,9 +219,14 @@
 				</button>
 			{:else}
 				<div class="px-3 py-4 text-center">
-					<p class="text-xs text-parchment/20 italic">No hay etiquetas</p>
+					<p class="text-xs text-parchment/20 italic">{tagFilter ? 'Sin resultados' : 'No hay etiquetas'}</p>
 				</div>
 			{/each}
+			{#if !sortedTags.filtered && sortedTags.total > SIDEBAR_LIMIT}
+				<p class="text-[10px] text-parchment/20 text-center py-1 italic">
+					Mostrando {SIDEBAR_LIMIT} de {sortedTags.total} — usa el buscador para ver más
+				</p>
+			{/if}
 		{/if}
 	</div>
 
