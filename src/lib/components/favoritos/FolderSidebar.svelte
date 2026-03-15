@@ -1,13 +1,31 @@
 <script lang="ts">
 	import { favoritos, folderCounts, tagCounts } from '$lib/stores/favoritos';
 	import { Button } from '$lib/components/ui/button';
-	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Info, Tag, ChevronDown, ChevronRight } from 'lucide-svelte';
+	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Info, Tag, ChevronDown, ChevronRight, Search, X } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { invoke } from '@tauri-apps/api/core';
+	import { onMount } from 'svelte';
+	import { normalize } from '$lib/utils';
 
 	let { onSelectFolder } = $props<{ onSelectFolder?: () => void }>();
 	let refreshing = $state(false);
 	let foldersExpanded = $state(true);
 	let tagsExpanded = $state(true);
+	let tagFilter = $state('');
+	let folderFilter = $state('');
+
+	onMount(async () => {
+		try {
+			const [fe, te] = await Promise.all([
+				invoke<string | null>('preference_get', { key: 'sidebar_folders_expanded' }),
+				invoke<string | null>('preference_get', { key: 'sidebar_tags_expanded' }),
+			]);
+			if (fe !== null) foldersExpanded = fe !== 'false';
+			if (te !== null) tagsExpanded = te !== 'false';
+		} catch (e) {
+			console.warn('[Sidebar] Error al restaurar estado:', e);
+		}
+	});
 
 	function selectFolder(id: string | null) {
 		favoritos.selectFolder(id);
@@ -31,10 +49,22 @@
 		}
 	}
 
-	// Sorted tags by count descending
+	// Sorted tags by count descending, filtered by tagFilter
 	let sortedTags = $derived(
 		Object.entries($tagCounts)
+			.filter(([name]) => {
+				if (!tagFilter.trim()) return true;
+				return normalize(name).includes(normalize(tagFilter.trim()));
+			})
 			.sort((a, b) => b[1] - a[1])
+	);
+
+	// Filtered folders
+	let filteredFolders = $derived(
+		$favoritos.folders.filter(folder => {
+			if (!folderFilter.trim()) return true;
+			return normalize(folder.name).includes(normalize(folderFilter.trim()));
+		})
 	);
 </script>
 
@@ -62,7 +92,7 @@
 
 		<!-- Sección Carpetas (colapsable) -->
 		<button
-			onclick={() => foldersExpanded = !foldersExpanded}
+			onclick={() => { foldersExpanded = !foldersExpanded; invoke('preference_set', { key: 'sidebar_folders_expanded', value: String(foldersExpanded) }).catch(console.warn); }}
 			class="w-full flex items-center gap-2 pt-6 pb-2 px-3 hover:opacity-80 transition-opacity"
 		>
 			{#if foldersExpanded}
@@ -77,7 +107,24 @@
 		</button>
 
 		{#if foldersExpanded}
-			{#each $favoritos.folders as folder}
+			<div class="relative px-2 pb-1">
+				<Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment/30 pointer-events-none" />
+				<input
+					type="text"
+					bind:value={folderFilter}
+					placeholder="Filtrar carpetas..."
+					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
+				/>
+				{#if folderFilter}
+					<button
+						onclick={() => folderFilter = ''}
+						class="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/30 hover:text-parchment/60 transition-colors"
+					>
+						<X class="w-3 h-3" />
+					</button>
+				{/if}
+			</div>
+			{#each filteredFolders as folder}
 				<button
 					onclick={() => selectFolder(folder.id)}
 					class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === folder.id ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
@@ -105,7 +152,7 @@
 
 		<!-- Sección Etiquetas (colapsable) -->
 		<button
-			onclick={() => tagsExpanded = !tagsExpanded}
+			onclick={() => { tagsExpanded = !tagsExpanded; invoke('preference_set', { key: 'sidebar_tags_expanded', value: String(tagsExpanded) }).catch(console.warn); }}
 			class="w-full flex items-center gap-2 pt-6 pb-2 px-3 hover:opacity-80 transition-opacity"
 		>
 			{#if tagsExpanded}
@@ -120,6 +167,23 @@
 		</button>
 
 		{#if tagsExpanded}
+			<div class="relative px-2 pb-1">
+				<Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment/30 pointer-events-none" />
+				<input
+					type="text"
+					bind:value={tagFilter}
+					placeholder="Filtrar etiquetas..."
+					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
+				/>
+				{#if tagFilter}
+					<button
+						onclick={() => tagFilter = ''}
+						class="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/30 hover:text-parchment/60 transition-colors"
+					>
+						<X class="w-3 h-3" />
+					</button>
+				{/if}
+			</div>
 			{#each sortedTags as [tagName, count]}
 				<button
 					onclick={() => selectTag(tagName)}

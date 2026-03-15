@@ -11,6 +11,7 @@
 	onMount(() => {
 		configuracion.init().then(() => checkConfig());
 		favoritos.restoreViewMode();
+		favoritos.restoreNavigation();
 
 		// Global shortcuts
 		window.addEventListener('keydown', handleGlobalKeydown);

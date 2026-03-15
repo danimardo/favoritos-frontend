@@ -19,27 +19,35 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
 };
 
 /**
+ * Normalizes a string for accent-insensitive and case-insensitive comparison.
+ * Removes diacritics (á→a, é→e, ñ→n, ü→u, etc.) and converts to lowercase.
+ */
+export function normalize(str: string): string {
+	return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
  * Filters a list of favorites based on a query string.
  * This should be fast (<50ms for 10,000 items ideally).
  */
 export function filterFavoritos(favorites: Favorito[], query: string): Favorito[] {
 	if (!query) return favorites;
 
-	const lowerQuery = query.toLowerCase();
+	const normalizedQuery = normalize(query);
 
 	return favorites.filter((f) => {
-		const title = f.title?.toLowerCase() ?? '';
-		const url = f.url?.toLowerCase() ?? '';
-		const description = f.description?.toLowerCase() ?? '';
-		const folder = f.folder?.toLowerCase() ?? '';
-		const tags = f.tags?.map((t) => t.toLowerCase()) ?? [];
+		const title = normalize(f.title ?? '');
+		const url = normalize(f.url ?? '');
+		const description = normalize(f.description ?? '');
+		const folder = normalize(f.folder ?? '');
+		const tags = f.tags?.map((t) => normalize(t)) ?? [];
 
 		return (
-			title.includes(lowerQuery) ||
-			url.includes(lowerQuery) ||
-			description.includes(lowerQuery) ||
-			folder.includes(lowerQuery) ||
-			tags.some((t) => t.includes(lowerQuery))
+			title.includes(normalizedQuery) ||
+			url.includes(normalizedQuery) ||
+			description.includes(normalizedQuery) ||
+			folder.includes(normalizedQuery) ||
+			tags.some((t) => t.includes(normalizedQuery))
 		);
 	});
 }

@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { LayoutGrid, List, Search, ExternalLink, Hash, Pencil, Trash2, XCircle } from 'lucide-svelte';
 	import { apiClient } from '$lib/services/api-client';
+	import { normalize } from '$lib/utils';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FavoritoForm from './FavoritoForm.svelte';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
@@ -38,16 +39,17 @@
 	}
 
 	// Lógica de filtrado protegida contra valores nulos/undefined
+	// Usa normalize() para búsqueda insensible a acentos y mayúsculas
 	let filteredItems = $derived(
 		$filteredByFolder.filter(item => {
-			const query = $favoritos.searchQuery.toLowerCase().trim();
+			const query = normalize($favoritos.searchQuery.trim());
 			if (!query) return true;
-			
-			const title = (item.title || '').toLowerCase();
-			const url = (item.url || '').toLowerCase();
-			const desc = (item.description || '').toLowerCase();
-			const notes = (item.notes || '').toLowerCase();
-			const folderName = (item.folder?.name || '').toLowerCase();
+
+			const title = normalize(item.title || '');
+			const url = normalize(item.url || '');
+			const desc = normalize(item.description || '');
+			const notes = normalize(item.notes || '');
+			const folderName = normalize(item.folder?.name || '');
 
 			// Búsqueda en textos principales
 			if (title.includes(query) || url.includes(query) || desc.includes(query) || notes.includes(query) || folderName.includes(query)) {
@@ -56,7 +58,7 @@
 
 			// Búsqueda en etiquetas (pueden ser objetos o strings)
 			const inTags = item.tags?.some(tag => {
-				const tagName = (typeof tag === 'string' ? tag : tag?.name || '').toLowerCase();
+				const tagName = normalize(typeof tag === 'string' ? tag : tag?.name || '');
 				return tagName.includes(query);
 			}) ?? false;
 

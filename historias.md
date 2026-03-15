@@ -77,6 +77,7 @@
   - **Carpetas**: Lista de carpetas del usuario con conteo de favoritos por carpeta.
   - **Etiquetas**: Lista de etiquetas extraídas automáticamente de los favoritos, ordenadas por frecuencia de uso descendente.
   - Ambas secciones se pueden expandir/contraer independientemente para optimizar el espacio.
+  - Ambas secciones incluyen un campo de búsqueda/filtro para localizar rápidamente carpetas o etiquetas en listas extensas. El filtrado es insensible a acentos y mayúsculas.
   - Los filtros de carpeta y etiqueta son mutuamente excluyentes: seleccionar uno deselecciona el otro.
   - El botón "Todos" deselecciona ambos filtros.
 
@@ -117,7 +118,7 @@
 
 ### 4.2 Rendimiento
 - **Lazy Loading**: La lista principal carga los favoritos bajo demanda al hacer scroll.
-- **Filtrado Local**: Respuesta instantánea (<50ms) en las búsquedas sobre los datos cargados.
+- **Filtrado Local**: Respuesta instantánea (<50ms) en las búsquedas sobre los datos cargados. Todas las búsquedas y filtros son insensibles a acentos/diacríticos y mayúsculas/minúsculas (normalización Unicode NFD).
 
 ---
 

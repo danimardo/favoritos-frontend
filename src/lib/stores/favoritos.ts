@@ -227,10 +227,14 @@ function createFavoritosStore() {
 
 		selectFolder(folderId: string | null) {
 			update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null }));
+			invoke('preference_set', { key: 'selected_folder_id', value: folderId || '' }).catch(console.warn);
+			invoke('preference_set', { key: 'selected_tag', value: '' }).catch(console.warn);
 		},
 
 		selectTag(tag: string | null) {
 			update((s) => ({ ...s, selectedTag: tag, selectedFolderId: null }));
+			invoke('preference_set', { key: 'selected_tag', value: tag || '' }).catch(console.warn);
+			invoke('preference_set', { key: 'selected_folder_id', value: '' }).catch(console.warn);
 		},
 
 		setSearchQuery(query: string) {
@@ -252,6 +256,22 @@ function createFavoritosStore() {
 				}
 			} catch (e) {
 				console.warn('[Favoritos] Error al restaurar viewMode:', e);
+			}
+		},
+
+		async restoreNavigation() {
+			try {
+				const [folderId, tag] = await Promise.all([
+					invoke<string | null>('preference_get', { key: 'selected_folder_id' }),
+					invoke<string | null>('preference_get', { key: 'selected_tag' }),
+				]);
+				if (tag) {
+					update((s) => ({ ...s, selectedTag: tag, selectedFolderId: null }));
+				} else if (folderId) {
+					update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null }));
+				}
+			} catch (e) {
+				console.warn('[Favoritos] Error al restaurar navegación:', e);
 			}
 		},
 
