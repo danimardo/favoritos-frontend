@@ -217,9 +217,13 @@ impl ApiClient {
             let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
                 .map_err(|e| ApiError::Message(format!("JSON parse error: {}", e)))?;
 
-            // Log first 500 chars of raw response to understand structure
-            let preview = if raw_text.len() > 500 { &raw_text[..500] } else { &raw_text };
-            tracing::info!("[API] get_favorites raw response preview: {}", preview);
+            // Log first ~500 chars of raw response (safe UTF-8 boundary)
+            let preview_end = raw_text.char_indices()
+                .take_while(|(i, _)| *i < 500)
+                .last()
+                .map(|(i, c)| i + c.len_utf8())
+                .unwrap_or(raw_text.len());
+            tracing::info!("[API] get_favorites raw response preview: {}", &raw_text[..preview_end]);
 
             if let Some(inner_data) = data.data {
                 // Log the keys available in inner_data
