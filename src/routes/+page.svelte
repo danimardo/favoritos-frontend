@@ -16,9 +16,11 @@
 		return () => window.removeEventListener('keydown', handleKeydown);
 	});
 
-	// Efecto reactivo: cuando estemos configurados y listos, cargamos los favoritos
+	// Carga inicial: cuando estemos configurados, cargamos los favoritos (solo una vez)
+	let initialLoadDone = false;
 	$effect(() => {
-		if ($isConfigured) {
+		if ($isConfigured && !initialLoadDone) {
+			initialLoadDone = true;
 			console.log('[HomePage] App configurada, cargando favoritos...');
 			favoritos.fetchAll();
 		}
