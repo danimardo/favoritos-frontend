@@ -659,9 +659,50 @@ impl ApiClient {
         Ok(all_items)
     }
 
-    /// Get all folders (paginates automatically to fetch all)
+    /// Fetch all items from a /stats endpoint (returns complete list, no pagination needed)
+    async fn fetch_all_from_stats(&self, endpoint: &str) -> Result<Vec<serde_json::Value>, ApiError> {
+        let url = format!("{}/{}", self.base_url, endpoint);
+        tracing::info!("[API] fetch_all_from_stats: {}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            tracing::warn!("[API] {} returned status {}, falling back to paginate_all",
+                endpoint, response.status());
+            // Fallback to paginated endpoint if /stats is not available
+            let base_endpoint = endpoint.replace("/stats", "");
+            return self.paginate_all(&base_endpoint).await;
+        }
+
+        let raw_text = response.text().await?;
+        let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
+            .map_err(|e| ApiError::Message(format!("JSON parse error for {}: {}", endpoint, e)))?;
+
+        let items = if let Some(inner_data) = data.data {
+            // Format: { data: [...], pagination: {...} } or direct array
+            if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                list.iter().cloned().collect()
+            } else if let Some(list) = inner_data.as_array() {
+                list.iter().cloned().collect()
+            } else {
+                Vec::new()
+            }
+        } else {
+            Vec::new()
+        };
+
+        tracing::info!("[API] fetch_all_from_stats {}: {} items loaded", endpoint, items.len());
+        Ok(items)
+    }
+
+    /// Get all folders with bookmark counts via /folders/stats
     pub async fn get_folders(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        self.paginate_all("folders").await
+        self.fetch_all_from_stats("folders/stats").await
     }
 
     /// Create a new folder
@@ -688,9 +729,9 @@ impl ApiClient {
         }
     }
 
-    /// Get all tags (paginates automatically to fetch all)
+    /// Get all tags with bookmark counts via /tags/stats
     pub async fn get_tags(&self) -> Result<Vec<serde_json::Value>, ApiError> {
-        self.paginate_all("tags").await
+        self.fetch_all_from_stats("tags/stats").await
     }
 
     /// Create a new tag
