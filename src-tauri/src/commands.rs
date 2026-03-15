@@ -81,6 +81,18 @@ pub fn config_clear(app: AppHandle) -> Result<(), String> {
     ConfigManager::clear(&app)
 }
 
+// ==================== UI Preferences Commands ====================
+
+#[tauri::command]
+pub fn preference_get(app: AppHandle, key: String) -> Option<String> {
+    ConfigManager::get_preference(&app, &key)
+}
+
+#[tauri::command]
+pub fn preference_set(app: AppHandle, key: String, value: String) -> Result<(), String> {
+    ConfigManager::set_preference(&app, &key, &value)
+}
+
 // ==================== Auth & User Commands ====================
 
 #[tauri::command]
@@ -181,6 +193,70 @@ pub async fn favorites_delete(app: AppHandle, id: String) -> Result<(), String> 
 pub async fn metadata_fetch(app: AppHandle, url: String) -> Result<serde_json::Value, String> {
     let client = get_api_client(&app)?;
     client.fetch_metadata(&url).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn metadata_refresh(app: AppHandle, id: String) -> Result<serde_json::Value, String> {
+    let client = get_api_client(&app)?;
+
+    // 1. Disparar el refresh (asíncrono en el servidor)
+    client
+        .refresh_metadata(&id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tracing::info!("[Metadata Refresh] Proceso iniciado, haciendo polling del estado...");
+
+    // 2. Polling del estado hasta que termine
+    let max_attempts = 60; // máximo ~60 segundos
+    for attempt in 1..=max_attempts {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+        match client.get_metadata_status(&id).await {
+            Ok(status) => {
+                let success = status
+                    .get("fetchStatus")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+
+                tracing::debug!(
+                    "[Metadata Refresh] Intento {}/{}: fetchStatus={}",
+                    attempt,
+                    max_attempts,
+                    success
+                );
+
+                if success == "ok" {
+                    tracing::info!(
+                        "[Metadata Refresh] Enriquecimiento completado tras {} segundos",
+                        attempt
+                    );
+                    // 3. Obtener el favorito actualizado
+                    return client
+                        .get_favorite(&id)
+                        .await
+                        .map_err(|e| e.to_string());
+                }
+
+                if success == "error" {
+                    let error_msg = status
+                        .get("fetchError")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Error desconocido en el servidor");
+                    return Err(format!("El servidor falló al enriquecer: {}", error_msg));
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "[Metadata Refresh] Error consultando estado (intento {}): {}",
+                    attempt,
+                    e
+                );
+            }
+        }
+    }
+
+    Err("Tiempo de espera agotado. El servidor no completó el enriquecimiento en 60 segundos.".to_string())
 }
 
 #[tauri::command]

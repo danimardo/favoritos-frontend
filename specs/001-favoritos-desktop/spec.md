@@ -41,12 +41,14 @@ Como usuario, necesito crear, ver, editar y eliminar mis favoritos personales as
 
 **Acceptance Scenarios**:
 
-1. **Given** el usuario está logueado, **When** presiona `Ctrl+N` o clic en "Nuevo Favorito", **Then** se abre el diálogo de creación.
-2. **Given** el usuario crea un nuevo favorito, **When** completa el formulario y guarda, **Then** el favorito aparece en su lista personal.
+1. **Given** el usuario está logueado, **When** presiona `Ctrl+N`, la tecla `+` o clic en el FAB flotante, **Then** se abre el diálogo de creación.
+2. **Given** el usuario crea un nuevo favorito, **When** completa el formulario y pulsa "Crear Favorito", **Then** el favorito se crea en el servidor, el modal permanece abierto y se lanza automáticamente el enriquecimiento con IA mediante polling de `GET /bookmarks/:id/metadata/status` hasta `fetchStatus: "ok"`. Los campos se actualizan con los datos enriquecidos y el usuario puede revisarlos antes de pulsar "Guardar y Cerrar" o "Cerrar sin guardar".
+3. **Given** el usuario intenta crear un favorito con una URL que ya existe, **When** el servidor devuelve 409 Conflict, **Then** la aplicación carga los datos del favorito existente en el formulario, muestra un mensaje informativo "Este favorito ya existe" y permite al usuario revisar y actualizar la información.
 4. **Given** el usuario edita un favorito existente, **When** modifica sus datos y guarda, **Then** los cambios se reflejan inmediatamente en la lista
-5. **Given** el usuario elimina un favorito, **When** confirma la eliminación, **Then** el favorito desaparece de la lista permanentemente
-6. **Given** el usuario crea una etiqueta escribiendo y presionando Enter, **When** completa la acción, **Then** la nueva etiqueta se crea y queda asociada al favorito
-7. **Given** el usuario selecciona "[+] Nueva Carpeta" en el selector, **When** ingresa un nombre y confirma, **Then** la nueva carpeta se crea y queda disponible para selección
+5. **Given** el usuario está editando un favorito (o en modo post-creación), **When** pulsa "Enriquecer con IA", **Then** se dispara `POST /bookmarks/:id/metadata/refresh`, se hace polling de `GET /bookmarks/:id/metadata/status` hasta `fetchStatus: "ok"`, y se actualizan los campos del formulario con los datos enriquecidos por IA sin guardar automáticamente
+6. **Given** el usuario elimina un favorito, **When** confirma la eliminación, **Then** el favorito desaparece de la lista permanentemente
+7. **Given** el usuario crea una etiqueta escribiendo y presionando Enter, **When** completa la acción, **Then** la nueva etiqueta se crea y queda asociada al favorito
+8. **Given** el usuario selecciona "[+] Nueva Carpeta" en el selector, **When** ingresa un nombre y confirma, **Then** la nueva carpeta se crea y queda disponible para selección
 
 ---
 
@@ -157,9 +159,17 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-023**: La aplicación DEBE mostrar notificación con resumen tras importación (importados, actualizados, omitidos, total).
 - **FR-023b**: La aplicación DEBE permitir exportar favoritos en dos formatos a elegir por el usuario mediante un diálogo: JSON (formato propio) y HTML de marcadores (Netscape Bookmark, vía `GET /bookmarks/export`, compatible con Firefox/Chrome/Edge).
 - **FR-024**: La aplicación DEBE mantener la paleta de colores fija.
-- **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `Ctrl+F` (buscar), `Ctrl+,` (perfil), `Ctrl+Q` (salir), `Esc` (cerrar/minimizar).
+- **FR-025**: La aplicación DEBE responder a los atajos: `Ctrl+N` (nuevo), `+` (nuevo, fuera de inputs), `Ctrl+F` (buscar), `Ctrl+,` (perfil), `Ctrl+Q` (salir), `Esc` (cerrar diálogos abiertos o minimizar al tray si no hay diálogos).
 - **FR-026**: La aplicación DEBE permitir al usuario configurar el nivel de log.
 - **FR-027**: La aplicación DEBE persistir automáticamente el tamaño y la posición de la ventana.
+- **FR-028**: La aplicación DEBE permitir enriquecer un favorito individual con IA desde el modal de edición o post-creación, utilizando `POST /bookmarks/:id/metadata/refresh` con polling de `GET /bookmarks/:id/metadata/status` hasta `fetchStatus: "ok"`, y actualizar los campos del formulario con los datos enriquecidos. En modo creación, el enriquecimiento se lanza automáticamente tras crear el favorito, manteniendo el modal abierto para que el usuario revise los campos antes de guardar definitivamente.
+- **FR-029**: La aplicación DEBE persistir el tipo de vista seleccionado (grid/list) entre sesiones, restaurándolo automáticamente al arrancar.
+- **FR-030**: La aplicación DEBE permitir editar la API Key desde la pantalla de configuración (además de desde la pantalla de login).
+- **FR-031**: La aplicación DEBE registrar logs de diagnóstico detallados en importación, exportación y enriquecimiento con IA (URL, payload, respuesta del servidor, campos actualizados) tanto en la consola de Tauri como en la consola del navegador.
+- **FR-032**: La aplicación DEBE mostrar el botón de "Nuevo Favorito" como un FAB (Floating Action Button) circular con icono "+" en la esquina inferior derecha de la pantalla principal, accesible también mediante la tecla `+`.
+- **FR-033**: La tecla `Esc` DEBE cerrar primero cualquier diálogo/modal abierto antes de minimizar la aplicación al tray. Solo si no hay diálogos abiertos, `Esc` minimiza al tray.
+- **FR-034**: Cuando se intenta crear un favorito con una URL que ya existe (error 409 Conflict), la aplicación DEBE detectar el duplicado, cargar los datos del favorito existente en el formulario y cambiar a modo edición, mostrando un mensaje informativo al usuario.
+- **FR-035**: La aplicación DEBE permitir añadir múltiples URLs sueltas desde la pantalla de configuración ("Añadir URL sueltas"), validando que cada línea sea una URL válida con protocolo http/https antes de iniciar la ingesta secuencial. Se muestra un resumen con creados/duplicados/errores al finalizar.
 
 ### Key Entities
 

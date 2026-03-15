@@ -2,14 +2,16 @@
 	import ConfigForm from '$lib/components/favoritos/ConfigForm.svelte';
 	import ImportDialog from '$lib/components/favoritos/ImportDialog.svelte';
 	import ExportDialog from '$lib/components/favoritos/ExportDialog.svelte';
+	import BulkUrlDialog from '$lib/components/favoritos/BulkUrlDialog.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Button } from '$lib/components/ui/button';
-	import { ArrowLeft, Download, Upload } from 'lucide-svelte';
+	import { ArrowLeft, Download, Upload, Link } from 'lucide-svelte';
 	import { isConfigured } from '$lib/stores/configuracion';
 	import { goto } from '$app/navigation';
 
 	let importOpen = $state(false);
 	let exportOpen = $state(false);
+	let bulkUrlOpen = $state(false);
 </script>
 
 <div class="max-w-2xl mx-auto space-y-6 pb-12">
@@ -60,16 +62,26 @@
 					<Download class="mr-2 h-4 w-4" />
 					Exportar
 				</Button>
+
+				<Button
+					variant="outline"
+					class="border-taupe text-taupe hover:bg-taupe/5 font-bold"
+					onclick={() => (bulkUrlOpen = true)}
+				>
+					<Link class="mr-2 h-4 w-4" />
+					Añadir URL sueltas
+				</Button>
 			</div>
 			<ImportDialog bind:open={importOpen} />
 			<ExportDialog bind:open={exportOpen} />
+			<BulkUrlDialog bind:open={bulkUrlOpen} />
 		</div>
 	{/if}
 
 	<div class="pt-8">
 		<h2 class="text-xl font-semibold text-taupe text-sm">Información del Sistema</h2>
 		<div class="mt-4 p-4 rounded-lg bg-silver/10 border border-silver/30 text-[10px] text-grey-olive font-mono">
-			<p>Favoritos Desktop v0.3.0</p>
+			<p>Favoritos Desktop v0.3.2</p>
 			<p>Plataforma: Tauri v2 (Rust + SvelteKit)</p>
 			<p>Data Model: Unified JSON v1</p>
 		</div>

@@ -233,6 +233,20 @@ function createFavoritosStore() {
 
 		setViewMode(mode: 'grid' | 'list') {
 			update((s) => ({ ...s, viewMode: mode }));
+			invoke('preference_set', { key: 'view_mode', value: mode }).catch((e) =>
+				console.warn('[Favoritos] Error al persistir viewMode:', e)
+			);
+		},
+
+		async restoreViewMode() {
+			try {
+				const saved = await invoke<string | null>('preference_get', { key: 'view_mode' });
+				if (saved === 'grid' || saved === 'list') {
+					update((s) => ({ ...s, viewMode: saved }));
+				}
+			} catch (e) {
+				console.warn('[Favoritos] Error al restaurar viewMode:', e);
+			}
 		},
 
 		setItems(items: Favorito[]) {

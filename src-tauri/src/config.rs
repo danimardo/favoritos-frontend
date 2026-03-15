@@ -95,6 +95,19 @@ impl ConfigManager {
         store.save().map_err(|e| e.to_string())
     }
 
+    /// Get a UI preference value from the store
+    pub fn get_preference(app: &AppHandle, key: &str) -> Option<String> {
+        let store = Self::get_or_load_store(app).ok()?;
+        store.get(key)?.as_str().map(|s| s.to_string())
+    }
+
+    /// Set a UI preference value in the store
+    pub fn set_preference(app: &AppHandle, key: &str, value: &str) -> Result<(), String> {
+        let store = Self::get_or_load_store(app)?;
+        store.set(key, serde_json::json!(value));
+        store.save().map_err(|e| e.to_string())
+    }
+
     /// Static version for initialization only (without AppHandle)
     pub fn get_initial_log_level() -> String {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));

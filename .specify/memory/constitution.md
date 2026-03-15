@@ -121,10 +121,11 @@ src-tauri/src/
 |-------|--------|
 | `Alt + Space` | Búsqueda global |
 | `Ctrl + N` | Nuevo favorito |
+| `+` | Nuevo favorito (fuera de inputs) |
 | `Ctrl + F` | Enfocar buscador |
 | `Ctrl + ,` | Abrir configuración |
 | `Ctrl + Q` | Salir de la app |
-| `Esc` | Cerrar diálogos |
+| `Esc` | Cerrar diálogo abierto, o minimizar al tray |
 
 ---
 
@@ -154,7 +155,7 @@ src-tauri/src/
 - Cierre inteligente (X → hide, no close)
 - Doble clic en tray restaura ventana
 - Menú contextual: "Abrir", "Nuevo Favorito", "Salir"
-- Notificaciones nativas para errores críticos e importaciones
+- Notificaciones nativas para errores críticos, importaciones y exportaciones
 
 ---
 
@@ -174,7 +175,7 @@ src-tauri/src/
 
 ## Governance
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-03-07
+**Version**: 1.1.0 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-03-15
 
 **Reglas**:
 - Esta constitución SUPERA cualquier otra práctica o preferencia individual

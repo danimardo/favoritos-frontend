@@ -10,6 +10,7 @@
 
 	onMount(() => {
 		configuracion.init().then(() => checkConfig());
+		favoritos.restoreViewMode();
 
 		// Global shortcuts
 		window.addEventListener('keydown', handleGlobalKeydown);
@@ -27,10 +28,11 @@
 			e.preventDefault();
 			invoke('app_quit');
 		}
-		// Esc (Minimizar al tray)
+		// Esc (Minimizar al tray, solo si no hay modales abiertos)
 		if (e.key === 'Escape') {
 			const isSearchPage = window.location.pathname === '/busqueda-global';
-			if (!isSearchPage) {
+			const hasOpenDialog = document.querySelector('[role="dialog"], [data-dialog-overlay]');
+			if (!isSearchPage && !hasOpenDialog) {
 				invoke('window_hide_main');
 			}
 		}

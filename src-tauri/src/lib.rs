@@ -89,6 +89,9 @@ pub fn run() {
             commands::config_update_settings,
             commands::config_validate,
             commands::config_clear,
+            // UI Preferences commands
+            commands::preference_get,
+            commands::preference_set,
             // Auth & User commands
             commands::auth_login,
             commands::auth_register,
@@ -100,6 +103,7 @@ pub fn run() {
             commands::favorites_update,
             commands::favorites_delete,
             commands::metadata_fetch,
+            commands::metadata_refresh,
             commands::favorites_visit,
             commands::favorites_open_url,
             commands::favorites_export,

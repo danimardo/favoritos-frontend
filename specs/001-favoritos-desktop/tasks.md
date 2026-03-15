@@ -227,32 +227,43 @@
 
 ---
 
-## Phase 7: User Story 5 - Importación Masiva (Priority: P3)
+## Phase 7: User Story 5 - Importación/Exportación y Enriquecimiento con IA (Priority: P3)
 
-**Goal**: Usuario puede importar colecciones grandes de favoritos desde JSON
+**Goal**: Usuario puede importar/exportar favoritos y enriquecer individualmente con IA
 
-**Independent Test**: Panel config → Importar → seleccionar JSON válido → importados → notificación con resumen
+**Independent Test**: Panel config → Importar HTML → importados con/sin IA → notificación con resumen. Exportar en JSON y HTML. Editar favorito → Enriquecer con IA → campos actualizados.
 
-**Acceptance**: FR-022, FR-023
+**Acceptance**: FR-022, FR-023, FR-023b, FR-028, FR-029, FR-030, FR-031
 
 ### Tests for US5
 
-- [X] **T093** [P] [US5] Test unitario de validación de JSON en `tests/unit/import.test.ts`
+- [X] **T093** [P] [US5] Test unitario de validación en `tests/unit/import.test.ts`
 - [X] **T094** [P] [US5] Test de integración de importación en `tests/integration/import.test.ts`
 
 ### Backend Implementation for US5
 
-- [X] **T095** [US5] Implementar comando `import_favorites` en `src-tauri/src/commands.rs` con validación y procesamiento por lotes
+- [X] **T095** [US5] Implementar comando `import_favorites` en `src-tauri/src/commands.rs` — recibe archivo HTML vía multipart/form-data (`POST /bookmarks/import`) con parámetro `ia`
+- [X] **T095b** [US5] Implementar `import_bookmarks` en `api.rs` con `reqwest::multipart` para enviar archivo HTML al servidor
+- [X] **T095c** [US5] Implementar comando `favorites_export_html` en `commands.rs` — descarga HTML vía `GET /bookmarks/export` y abre diálogo de guardado
+- [X] **T095d** [US5] Implementar `metadata_refresh` en `commands.rs` — dispara `POST /bookmarks/:id/metadata/refresh`, polling de `GET /bookmarks/:id/metadata/status` hasta `fetchStatus: "ok"`, y devuelve favorito actualizado vía `GET /bookmarks/:id`
+- [X] **T095e** [US5] Implementar comandos genéricos `preference_get`/`preference_set` para persistir preferencias de UI en `settings.bin`
 
 ### Frontend Implementation for US5
 
-- [X] **T096** [P] [US5] Crear componente `ImportDialog.svelte` en `src/lib/components/favoritos/`
-- [X] **T097** [US5] Implementar selector de archivo JSON en `ImportDialog.svelte`
-- [X] **T098** [US5] Implementar validación de formato JSON en `ImportDialog.svelte`
-- [X] **T099** [US5] Implementar notificación con resumen (importados/saltados) tras importación
-- [X] **T100** [US5] Integrar botón "Importar" en página de configuración `src/routes/(dashboard)/configuracion/+page.svelte`
+- [X] **T096** [P] [US5] Crear componente `ImportDialog.svelte` — acepta archivos .html/.htm, toggle de enriquecimiento con IA, muestra 4 métricas (importados/actualizados/omitidos/total)
+- [X] **T097** [US5] Implementar selector de archivo HTML en `ImportDialog.svelte`
+- [X] **T098** [US5] Implementar toggle de IA en `ImportDialog.svelte` con descripción informativa
+- [X] **T099** [US5] Implementar notificación con resumen (importados/actualizados/omitidos/total) tras importación
+- [X] **T100** [US5] Integrar botones "Importar" y "Exportar" en página de configuración
+- [X] **T101** [US5] Crear componente `ExportDialog.svelte` — selector de formato (JSON propio / HTML Netscape Bookmark)
+- [X] **T102** [US5] Implementar botón "Enriquecer con IA" en `FavoritoForm.svelte` (solo modo edición) con spinner, feedback visual y detección de campos cambiados
+- [X] **T103** [US5] Implementar persistencia del tipo de vista (grid/list) entre sesiones en `favoritos.ts`
+- [X] **T104** [US5] Añadir campo API Key editable en `ConfigForm.svelte`
+- [X] **T105** [US5] Cambiar campo "Descripción Corta" de Input a textarea multilínea en `FavoritoForm.svelte`
+- [X] **T106** [US5] Añadir logs de diagnóstico en importación, exportación y enriquecimiento (Rust tracing + console del navegador)
+- [X] **T107** [US5] Fix: `#[serde(rename_all = "camelCase")]` en `ConfigResponse` para correcta persistencia de apiUrl y logLevel
 
-**Checkpoint**: User Story 5 fully functional - Importación masiva completa
+**Checkpoint**: User Story 5 fully functional - Importación/Exportación/Enriquecimiento IA completo
 
 ---
 

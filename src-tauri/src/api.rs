@@ -372,6 +372,63 @@ impl ApiClient {
         }
     }
 
+    /// Trigger metadata refresh for a bookmark (async server-side process).
+    /// Returns immediately with { success: true }. Use get_metadata_status to poll.
+    pub async fn refresh_metadata(&self, id: &str) -> Result<(), ApiError> {
+        let url = format!("{}/bookmarks/{}/metadata/refresh", self.base_url, id);
+
+        tracing::info!("[Metadata Refresh] Disparando enriquecimiento del favorito {}", id);
+
+        let response = self
+            .client
+            .post(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            tracing::info!("[Metadata Refresh] Proceso iniciado correctamente para favorito {}", id);
+            Ok(())
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            tracing::error!("[Metadata Refresh] Error: {} - {}", status, error_body);
+            Err(ApiError::Message(format!(
+                "Metadata refresh failed: {} - {}",
+                status, error_body
+            )))
+        }
+    }
+
+    /// Check metadata processing status for a bookmark.
+    pub async fn get_metadata_status(
+        &self,
+        id: &str,
+    ) -> Result<serde_json::Value, ApiError> {
+        let url = format!("{}/bookmarks/{}/metadata/status", self.base_url, id);
+
+        let response = self
+            .client
+            .get(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let api_response: ApiResponse<serde_json::Value> = response.json().await?;
+            api_response
+                .data
+                .ok_or_else(|| ApiError::Message("No data returned from metadata status".to_string()))
+        } else {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            Err(ApiError::Message(format!(
+                "Metadata status failed: {} - {}",
+                status, error_body
+            )))
+        }
+    }
+
     /// Update an existing favorite
     pub async fn update_favorite(
         &self,
