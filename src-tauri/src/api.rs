@@ -240,10 +240,18 @@ impl ApiClient {
                     .and_then(|p| p.get("total"))
                     .and_then(|v| v.as_u64())
                     .unwrap_or(0) as u32;
+                let page_size = pagination
+                    .and_then(|p| p.get("pageSize").or_else(|| p.get("limit")))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(50) as u32;
+                // totalPages may not exist; calculate from total/pageSize
                 let total_pages = pagination
                     .and_then(|p| p.get("totalPages").or_else(|| p.get("pages")))
                     .and_then(|v| v.as_u64())
-                    .unwrap_or(1) as u32;
+                    .map(|v| v as u32)
+                    .unwrap_or_else(|| {
+                        if total == 0 { 1 } else { (total + page_size - 1) / page_size }
+                    });
                 let current_page = pagination
                     .and_then(|p| p.get("page"))
                     .and_then(|v| v.as_u64())
@@ -640,11 +648,23 @@ impl ApiClient {
                 if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
                     page_items = list.iter().cloned().collect();
                     if let Some(pagination) = inner_data.get("pagination").or_else(|| inner_data.get("meta")) {
+                        let total_items = pagination
+                            .get("total")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32;
+                        let ps = pagination
+                            .get("pageSize")
+                            .or_else(|| pagination.get("limit"))
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(page_size as u64) as u32;
                         total_pages = pagination
                             .get("totalPages")
                             .or_else(|| pagination.get("pages"))
                             .and_then(|v| v.as_u64())
-                            .unwrap_or(1) as u32;
+                            .map(|v| v as u32)
+                            .unwrap_or_else(|| {
+                                if total_items == 0 { 1 } else { (total_items + ps - 1) / ps }
+                            });
                     }
                 }
                 // Format: direct array (no pagination wrapper)
