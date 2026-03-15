@@ -117,7 +117,7 @@
 - El campo `visitCount` se actualiza automáticamente al abrir un link desde la app.
 
 ### 4.2 Rendimiento
-- **Lazy Loading**: La lista principal carga los favoritos bajo demanda al hacer scroll.
+- **Carga Completa**: Al iniciar, la aplicación pagina automáticamente la API para cargar todos los favoritos del usuario. El store se actualiza progresivamente durante la carga para que el usuario vea datos mientras se completa. Esto garantiza que el filtrado local, la sidebar de tags, la detección de duplicados y la búsqueda operen sobre el conjunto completo de datos.
 - **Filtrado Local**: Respuesta instantánea (<50ms) en las búsquedas sobre los datos cargados. Todas las búsquedas y filtros son insensibles a acentos/diacríticos y mayúsculas/minúsculas (normalización Unicode NFD).
 
 ---

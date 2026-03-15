@@ -174,6 +174,7 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-037**: La aplicación DEBE persistir entre sesiones el estado completo de navegación de la sidebar: el filtro activo (carpeta o etiqueta seleccionada) y el estado expandido/colapsado de cada sección (Carpetas y Etiquetas). Al reiniciar la aplicación, se restaura automáticamente el último estado guardado.
 - **FR-038**: Las secciones de Carpetas y Etiquetas en la sidebar DEBEN incluir un campo de búsqueda/filtro que permita filtrar los elementos en tiempo real. El filtrado es insensible a acentos y mayúsculas (normalización de diacríticos).
 - **FR-039**: Toda búsqueda y filtrado en la aplicación (dashboard, buscador global y sidebar) DEBE ser insensible a acentos/diacríticos y mayúsculas/minúsculas, utilizando normalización Unicode NFD.
+- **FR-040**: La aplicación DEBE cargar todos los favoritos del usuario al inicio (paginando automáticamente la API), no solo la primera página. Esto garantiza que el filtrado local, la detección de duplicados 409, el conteo de tags en la sidebar y la búsqueda operen sobre el conjunto completo de datos. El store se actualiza progresivamente durante la carga para que el usuario vea datos mientras se completa.
 
 ### Key Entities
 

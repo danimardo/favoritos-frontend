@@ -40,21 +40,44 @@ function createFavoritosStore() {
 		async fetchAll() {
 			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
 			try {
-				const [allItems, folders] = await Promise.all([
-					apiClient.getFavorites(1, 100),
-					apiClient.getFolders()
-				]);
+				const folders = await apiClient.getFolders();
+				let allItems: Favorito[] = [];
+				let currentPage = 1;
+				let hasMore = true;
+
+				while (hasMore) {
+					console.log(`[Favoritos] Cargando página ${currentPage}...`);
+					const pageItems = await apiClient.getFavorites(currentPage, 100);
+
+					if (!pageItems || pageItems.length === 0) {
+						hasMore = false;
+					} else {
+						allItems = [...allItems, ...pageItems];
+						// Actualizar el store progresivamente para que el usuario vea datos
+						const items = allItems.filter(item => !item.isArchived && !item.isRead);
+						update((s) => ({
+							...s,
+							items,
+							folders,
+							page: currentPage,
+							hasMore: pageItems.length >= 100
+						}));
+						hasMore = pageItems.length >= 100;
+						currentPage++;
+					}
+				}
 
 				const items = allItems.filter(item => !item.isArchived && !item.isRead);
-				
-				update((s) => ({ 
-					...s, 
-					items, 
+				console.log(`[Favoritos] Carga completa: ${items.length} favoritos activos de ${allItems.length} totales.`);
+
+				update((s) => ({
+					...s,
+					items,
 					folders,
-					loading: false, 
-					hasMore: allItems.length >= 100 
+					loading: false,
+					hasMore: false
 				}));
-				
+
 				await databaseService.saveFavoritos(items);
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
@@ -65,30 +88,6 @@ function createFavoritosStore() {
 					update((s) => ({ ...s, loading: false, error: errorMsg }));
 					await tauriNotifications.showError(`Error de conexión: ${errorMsg}`);
 				}
-			}
-		},
-
-		async fetchNextPage() {
-			const state = get(this);
-			if (state.loading || !state.hasMore) return;
-
-			update((s) => ({ ...s, loading: true }));
-			try {
-				const nextPage = state.page + 1;
-				const allNewItems = await apiClient.getFavorites(nextPage, 100);
-				const newItems = allNewItems.filter(item => !item.isArchived && !item.isRead);
-				
-				update((s) => ({
-					...s,
-					items: [...s.items, ...newItems],
-					page: nextPage,
-					loading: false,
-					hasMore: allNewItems.length >= 100
-				}));
-			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({ ...s, loading: false, error: errorMsg }));
-				await tauriNotifications.showError(`Error de conexión (página ${state.page + 1}): ${errorMsg}`);
 			}
 		},
 
