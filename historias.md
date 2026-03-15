@@ -73,6 +73,12 @@
 - **Aislamiento de Datos**: El usuario solo visualiza sus propios favoritos, carpetas y etiquetas.
 - **Vista**: Grid de tarjetas (Cards) o lista compacta. El tipo de vista seleccionado (grid/list) se persiste entre sesiones.
 - **Caché de Favicons**: Los iconos de los sitios web se guardan en la caché local para mejorar el rendimiento.
+- **Sidebar de Navegación**: Barra lateral con dos secciones colapsables tipo acordeón:
+  - **Carpetas**: Lista de carpetas del usuario con conteo de favoritos por carpeta.
+  - **Etiquetas**: Lista de etiquetas extraídas automáticamente de los favoritos, ordenadas por frecuencia de uso descendente.
+  - Ambas secciones se pueden expandir/contraer independientemente para optimizar el espacio.
+  - Los filtros de carpeta y etiqueta son mutuamente excluyentes: seleccionar uno deselecciona el otro.
+  - El botón "Todos" deselecciona ambos filtros.
 
 ---
 

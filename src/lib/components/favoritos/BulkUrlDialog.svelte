@@ -9,6 +9,7 @@
 
 	let urlText = $state('');
 	let loading = $state(false);
+	let cancelled = $state(false);
 	let results = $state<{ url: string; status: 'ok' | 'duplicate' | 'error'; message?: string }[]>([]);
 	let done = $state(false);
 	let currentIndex = $state(0);
@@ -55,21 +56,50 @@
 
 		loading = true;
 		done = false;
+		cancelled = false;
 		results = [];
 		totalUrls = validUrls.length;
 		currentIndex = 0;
 
+		let delay = 1500; // Pausa base entre peticiones (ms)
+
 		for (const entry of validUrls) {
+			if (cancelled) break;
 			currentIndex++;
-			try {
-				await favoritos.create({ url: entry.text, title: '' });
-				results = [...results, { url: entry.text, status: 'ok' }];
-			} catch (e) {
-				const errMsg = e instanceof Error ? e.message : String(e);
-				if (errMsg.includes('409') || errMsg.includes('Conflict')) {
-					results = [...results, { url: entry.text, status: 'duplicate', message: 'Ya existe' }];
-				} else {
-					results = [...results, { url: entry.text, status: 'error', message: errMsg }];
+			// Pausa entre peticiones para evitar rate limiting (429)
+			if (currentIndex > 1) {
+				await new Promise((r) => setTimeout(r, delay));
+			}
+
+			let success = false;
+			let retries = 0;
+			const maxRetries = 3;
+
+			while (!success && retries <= maxRetries && !cancelled) {
+				try {
+					await favoritos.create({ url: entry.text, title: '' });
+					results = [...results, { url: entry.text, status: 'ok' }];
+					success = true;
+				} catch (e) {
+					const errMsg = e instanceof Error ? e.message : String(e);
+					if (errMsg.includes('409') || errMsg.includes('Conflict')) {
+						results = [...results, { url: entry.text, status: 'duplicate', message: 'Ya existe' }];
+						success = true;
+					} else if (errMsg.includes('429') || errMsg.includes('Too Many')) {
+						retries++;
+						if (retries <= maxRetries) {
+							// Espera progresiva: 5s, 10s, 15s y aumentar delay base
+							const waitTime = 5000 * retries;
+							delay = Math.min(delay + 500, 3000);
+							await new Promise((r) => setTimeout(r, waitTime));
+						} else {
+							results = [...results, { url: entry.text, status: 'error', message: 'Límite de peticiones excedido tras reintentos' }];
+							success = true;
+						}
+					} else {
+						results = [...results, { url: entry.text, status: 'error', message: errMsg }];
+						success = true;
+					}
 				}
 			}
 		}
@@ -83,10 +113,15 @@
 		}
 	}
 
+	function cancelBulk() {
+		cancelled = true;
+	}
+
 	function reset() {
 		urlText = '';
 		results = [];
 		done = false;
+		cancelled = false;
 		currentIndex = 0;
 		totalUrls = 0;
 	}
@@ -151,9 +186,14 @@
 				{/if}
 			{:else}
 				<div class="bg-silver/10 rounded-xl p-5 space-y-4 border border-silver/30">
-					<div class="flex items-center gap-2 text-green-600 font-bold">
-						<CheckCircle2 class="h-6 w-6" />
-						Proceso finalizado
+					<div class="flex items-center gap-2 font-bold {cancelled ? 'text-amber-600' : 'text-green-600'}">
+						{#if cancelled}
+							<AlertCircle class="h-6 w-6" />
+							Proceso detenido ({currentIndex - 1} de {totalUrls} procesados)
+						{:else}
+							<CheckCircle2 class="h-6 w-6" />
+							Proceso finalizado
+						{/if}
 					</div>
 					<div class="grid grid-cols-3 gap-3 text-sm">
 						<div class="bg-white p-3 rounded-lg border border-silver/50 shadow-sm text-center">
@@ -193,14 +233,23 @@
 
 		<Dialog.Footer class="gap-2">
 			{#if !done}
-				<Button
-					variant="ghost"
-					onclick={() => (open = false)}
-					disabled={loading}
-					class="text-grey-olive hover:text-taupe"
-				>
-					Cancelar
-				</Button>
+				{#if loading}
+					<Button
+						variant="outline"
+						onclick={cancelBulk}
+						class="border-red-300 text-red-600 hover:bg-red-50 font-semibold"
+					>
+						Detener
+					</Button>
+				{:else}
+					<Button
+						variant="ghost"
+						onclick={() => (open = false)}
+						class="text-grey-olive hover:text-taupe"
+					>
+						Cancelar
+					</Button>
+				{/if}
 				<Button
 					onclick={startBulkAdd}
 					disabled={validUrls.length === 0 || hasErrors || loading}

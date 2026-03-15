@@ -13,6 +13,7 @@ interface FavoritosState {
 	page: number;
 	hasMore: boolean;
 	selectedFolderId: string | null;
+	selectedTag: string | null;
 	viewMode: 'grid' | 'list';
 	searchQuery: string;
 }
@@ -25,6 +26,7 @@ const initialState: FavoritosState = {
 	page: 1,
 	hasMore: true,
 	selectedFolderId: null,
+	selectedTag: null,
 	viewMode: 'grid',
 	searchQuery: ''
 };
@@ -224,7 +226,11 @@ function createFavoritosStore() {
 		},
 
 		selectFolder(folderId: string | null) {
-			update((s) => ({ ...s, selectedFolderId: folderId }));
+			update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null }));
+		},
+
+		selectTag(tag: string | null) {
+			update((s) => ({ ...s, selectedTag: tag, selectedFolderId: null }));
 		},
 
 		setSearchQuery(query: string) {
@@ -261,11 +267,19 @@ function createFavoritosStore() {
 
 export const favoritos = createFavoritosStore();
 
-// Derived store for filtered items by folder
+// Derived store for filtered items by folder or tag
 export const filteredByFolder = derived(favoritos, ($favs) => {
+	if ($favs.selectedTag) {
+		return $favs.items.filter(item =>
+			item.tags?.some(t => {
+				const tagName = typeof t === 'string' ? t : t.name;
+				return tagName === $favs.selectedTag;
+			})
+		);
+	}
 	if (!$favs.selectedFolderId) return $favs.items;
-	return $favs.items.filter(item => 
-		item.folderId === $favs.selectedFolderId || 
+	return $favs.items.filter(item =>
+		item.folderId === $favs.selectedFolderId ||
 		item.folder?.id === $favs.selectedFolderId
 	);
 });
@@ -278,6 +292,18 @@ export const folderCounts = derived(favoritos, ($favs) => {
 		if (fId) {
 			counts[fId] = (counts[fId] || 0) + 1;
 		}
+	});
+	return counts;
+});
+
+// Derived store for tag counts (sorted by count desc)
+export const tagCounts = derived(favoritos, ($favs) => {
+	const counts: Record<string, number> = {};
+	$favs.items.forEach(item => {
+		item.tags?.forEach(t => {
+			const name = typeof t === 'string' ? t : t.name;
+			if (name) counts[name] = (counts[name] || 0) + 1;
+		});
 	});
 	return counts;
 });

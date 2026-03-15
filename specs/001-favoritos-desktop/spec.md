@@ -169,7 +169,8 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-032**: La aplicación DEBE mostrar el botón de "Nuevo Favorito" como un FAB (Floating Action Button) circular con icono "+" en la esquina inferior derecha de la pantalla principal, accesible también mediante la tecla `+`.
 - **FR-033**: La tecla `Esc` DEBE cerrar primero cualquier diálogo/modal abierto antes de minimizar la aplicación al tray. Solo si no hay diálogos abiertos, `Esc` minimiza al tray.
 - **FR-034**: Cuando se intenta crear un favorito con una URL que ya existe (error 409 Conflict), la aplicación DEBE detectar el duplicado, cargar los datos del favorito existente en el formulario y cambiar a modo edición, mostrando un mensaje informativo al usuario.
-- **FR-035**: La aplicación DEBE permitir añadir múltiples URLs sueltas desde la pantalla de configuración ("Añadir URL sueltas"), validando que cada línea sea una URL válida con protocolo http/https antes de iniciar la ingesta secuencial. Se muestra un resumen con creados/duplicados/errores al finalizar.
+- **FR-035**: La aplicación DEBE permitir añadir múltiples URLs sueltas desde la pantalla de configuración ("Añadir URL sueltas"), validando que cada línea sea una URL válida con protocolo http/https antes de iniciar la ingesta secuencial. Se muestra un resumen con creados/duplicados/errores al finalizar. Incluye pausa adaptativa entre peticiones y reintentos automáticos ante rate limiting (429), con opción de detener el proceso en cualquier momento.
+- **FR-036**: La sidebar de navegación DEBE mostrar dos secciones colapsables (acordeón): Carpetas y Etiquetas. Cada sección se puede expandir/contraer independientemente. Las etiquetas se extraen automáticamente de los favoritos cargados, ordenadas por frecuencia. Seleccionar una carpeta deselecciona la etiqueta activa y viceversa (filtros mutuamente excluyentes).
 
 ### Key Entities
 
