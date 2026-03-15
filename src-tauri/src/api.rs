@@ -217,13 +217,23 @@ impl ApiClient {
             let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
                 .map_err(|e| ApiError::Message(format!("JSON parse error: {}", e)))?;
 
+            // Log first 500 chars of raw response to understand structure
+            let preview = if raw_text.len() > 500 { &raw_text[..500] } else { &raw_text };
+            tracing::info!("[API] get_favorites raw response preview: {}", preview);
+
             if let Some(inner_data) = data.data {
+                // Log the keys available in inner_data
+                if let Some(obj) = inner_data.as_object() {
+                    let keys: Vec<&String> = obj.keys().collect();
+                    tracing::info!("[API] get_favorites inner_data keys: {:?}", keys);
+                }
+
                 // Extract pagination metadata
                 let pagination = inner_data.get("pagination");
                 if let Some(p) = &pagination {
                     tracing::info!("[API] get_favorites pagination raw: {}", p);
                 } else {
-                    tracing::warn!("[API] get_favorites: no pagination field found in response");
+                    tracing::warn!("[API] get_favorites: no pagination field in inner_data");
                 }
                 let total = pagination
                     .and_then(|p| p.get("total"))
