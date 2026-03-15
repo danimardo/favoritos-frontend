@@ -83,6 +83,10 @@ export const apiClient = {
 		return invoke<Etiqueta>('tags_create', { name, color });
 	},
 
+	async deleteTag(id: string): Promise<void> {
+		return invoke<void>('tags_delete', { id });
+	},
+
 	// Import
 	async importFavorites(data: string): Promise<ImportResult> {
 		return invoke<ImportResult>('import_favorites', { data });

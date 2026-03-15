@@ -80,12 +80,14 @@
   - Ambas secciones incluyen un campo de búsqueda/filtro para localizar rápidamente carpetas o etiquetas en listas extensas. El filtrado es insensible a acentos y mayúsculas.
   - Los filtros de carpeta y etiqueta son mutuamente excluyentes: seleccionar uno deselecciona el otro.
   - El botón "Todos" deselecciona ambos filtros.
+  - **Eliminación de etiquetas**: Clic derecho sobre una etiqueta en la sidebar muestra un menú contextual con la opción "Eliminar etiqueta". Tras confirmación del usuario, se llama a `DELETE /tags/:id` vía Tauri, se recarga la lista de etiquetas y, si la etiqueta eliminada era la seleccionada, el filtro activo se restablece a "Todos".
 
 ---
 
 ### 3.2 Gestión de Favoritos (Diálogos)
 
 #### Diálogo: Crear/Editar Favorito
+- **Altura del diálogo**: Altura máxima de `85vh` para mostrar correctamente todos los campos sin recortes en resoluciones estándar.
 - **Gestión On-the-fly**: Permite crear carpetas y etiquetas directamente desde el diálogo.
 - **Descripción multilínea**: El campo "Descripción Corta" es un textarea de varias líneas.
 - **Enriquecimiento con IA**: Disponible en dos modos:

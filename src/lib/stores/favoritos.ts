@@ -52,7 +52,13 @@ function createFavoritosStore() {
 		};
 		if (state.searchQuery.trim()) params.search = state.searchQuery.trim();
 		if (state.selectedFolderId) params.folder = state.selectedFolderId;
-		if (state.selectedTag) params.tags = state.selectedTag;
+		if (state.selectedTag) {
+			// Resolve tag name → tag ID for the API (expects tagId param)
+			const tag = state.allTags.find(t => t.name === state.selectedTag);
+			if (tag) {
+				params.tags = String(tag.id);
+			}
+		}
 		return params;
 	}
 

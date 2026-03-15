@@ -195,7 +195,7 @@ impl ApiClient {
         }
         if let Some(ref t) = tags {
             if !t.is_empty() {
-                params.push(format!("tags={}", urlencoding::encode(t)));
+                params.push(format!("tagId={}", urlencoding::encode(t)));
             }
         }
 
@@ -796,6 +796,26 @@ impl ApiClient {
         } else {
             Err(ApiError::Message(format!(
                 "Failed to create tag: {}",
+                response.status()
+            )))
+        }
+    }
+
+    /// Delete a tag by ID
+    pub async fn delete_tag(&self, id: &str) -> Result<(), ApiError> {
+        let url = format!("{}/tags/{}", self.base_url, id);
+        let response = self
+            .client
+            .delete(&url)
+            .header("X-API-Key", &self.api_key)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(ApiError::Message(format!(
+                "Failed to delete tag: {}",
                 response.status()
             )))
         }

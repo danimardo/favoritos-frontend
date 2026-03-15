@@ -186,7 +186,7 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-4 max-h-[70vh] overflow-y-auto px-1 pr-2 custom-scrollbar bg-white rounded-lg">
+<form onsubmit={handleSubmit} class="space-y-4 max-h-[85vh] overflow-y-auto px-1 pr-2 custom-scrollbar bg-white rounded-lg">
 	<!-- CAMPO URL: ÚNICO OBLIGATORIO -->
 	<div class="space-y-2">
 		<div class="flex justify-between items-center">

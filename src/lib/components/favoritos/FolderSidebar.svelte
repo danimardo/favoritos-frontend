@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { favoritos, folderCounts, tagCounts } from '$lib/stores/favoritos';
+	import { apiClient } from '$lib/services/api-client';
 	import { Button } from '$lib/components/ui/button';
-	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Info, Tag, ChevronDown, ChevronRight, Search, X } from 'lucide-svelte';
+	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Info, Tag, ChevronDown, ChevronRight, Search, X, Trash2 } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
@@ -13,6 +14,44 @@
 	let tagsExpanded = $state(true);
 	let tagFilter = $state('');
 	let folderFilter = $state('');
+
+	// Context menu state
+	let contextMenu = $state<{ x: number; y: number; tagName: string; tagId: string } | null>(null);
+	let deletingTag = $state(false);
+
+	function handleTagContextMenu(e: MouseEvent, tagName: string) {
+		e.preventDefault();
+		const tag = $favoritos.allTags.find(t => t.name === tagName);
+		if (!tag) return;
+		contextMenu = { x: e.clientX, y: e.clientY, tagName, tagId: tag.id };
+	}
+
+	function closeContextMenu() {
+		contextMenu = null;
+	}
+
+	async function handleDeleteTag() {
+		if (!contextMenu || deletingTag) return;
+		const { tagId, tagName } = contextMenu;
+		if (!confirm(`¿Eliminar la etiqueta "${tagName}"? Se desvinculará de todos los favoritos.`)) {
+			closeContextMenu();
+			return;
+		}
+		deletingTag = true;
+		try {
+			await apiClient.deleteTag(tagId);
+			await favoritos.loadFoldersAndTags();
+			if ($favoritos.selectedTag === tagName) {
+				favoritos.selectTag(null);
+			}
+		} catch (e) {
+			console.error('[Sidebar] Error al eliminar etiqueta:', e);
+			alert(`Error al eliminar la etiqueta: ${e}`);
+		} finally {
+			deletingTag = false;
+			closeContextMenu();
+		}
+	}
 
 	onMount(async () => {
 		try {
@@ -207,6 +246,7 @@
 			{#each sortedTags.items as [tagName, count]}
 				<button
 					onclick={() => selectTag(tagName)}
+					oncontextmenu={(e) => handleTagContextMenu(e, tagName)}
 					class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group {$favoritos.selectedTag === tagName ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
 				>
 					<div class="flex items-center gap-3">
@@ -259,12 +299,37 @@
 		<div class="flex items-center justify-between text-[10px] text-parchment/30 px-1 font-medium">
 			<div class="flex items-center gap-1.5">
 				<Info class="w-3 h-3" />
-				<span>v0.3.3</span>
+				<span>v0.3.4</span>
 			</div>
 			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.total || $favoritos.items.length} ítems</span>
 		</div>
 	</div>
 </div>
+
+<!-- Context menu para etiquetas -->
+{#if contextMenu}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div
+		class="fixed inset-0 z-50"
+		onclick={closeContextMenu}
+		oncontextmenu={(e) => { e.preventDefault(); closeContextMenu(); }}
+	>
+		<div
+			class="absolute bg-taupe border border-white/20 rounded-lg shadow-2xl py-1 min-w-[160px]"
+			style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
+		>
+			<button
+				onclick={handleDeleteTag}
+				disabled={deletingTag}
+				class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+			>
+				<Trash2 class="w-3.5 h-3.5" />
+				<span>{deletingTag ? 'Eliminando...' : 'Eliminar etiqueta'}</span>
+			</button>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.custom-scrollbar::-webkit-scrollbar {

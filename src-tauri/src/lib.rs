@@ -114,6 +114,7 @@ pub fn run() {
             // Tag commands
             commands::tags_get,
             commands::tags_create,
+            commands::tags_delete,
             // Cache commands
             commands::cache_favicon_get,
             commands::cache_favicon_set,

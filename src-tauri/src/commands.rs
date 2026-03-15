@@ -395,6 +395,17 @@ pub async fn tags_create(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn tags_delete(app: AppHandle, id: serde_json::Value) -> Result<(), String> {
+    let client = get_api_client(&app)?;
+    let id_str = match &id {
+        serde_json::Value::String(s) => s.clone(),
+        serde_json::Value::Number(n) => n.to_string(),
+        _ => return Err("ID inválido".to_string()),
+    };
+    client.delete_tag(&id_str).await.map_err(|e| e.to_string())
+}
+
 // ==================== Cache Commands ====================
 
 #[tauri::command]
