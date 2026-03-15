@@ -22,7 +22,8 @@
 		if ($isConfigured && !initialLoadDone) {
 			initialLoadDone = true;
 			console.log('[HomePage] App configurada, cargando favoritos...');
-			favoritos.fetchAll();
+			favoritos.loadFoldersAndTags();
+			favoritos.fetchPage(true);
 		}
 	});
 

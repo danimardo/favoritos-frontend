@@ -21,6 +21,15 @@ pub struct ApiResponse<T> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedResponse {
+    pub items: Vec<serde_json::Value>,
+    pub total: u32,
+    pub total_pages: u32,
+    pub page: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthResponse {
     pub status: String,
     pub version: Option<String>,
@@ -156,12 +165,15 @@ impl ApiClient {
         }
     }
 
-    /// Get all favorites with pagination
+    /// Get favorites with server-side pagination, search, and filtering
     pub async fn get_favorites(
         &self,
         page: Option<u32>,
         limit: Option<u32>,
-    ) -> Result<Vec<serde_json::Value>, ApiError> {
+        search: Option<String>,
+        folder: Option<String>,
+        tags: Option<String>,
+    ) -> Result<PaginatedResponse, ApiError> {
         let mut url = format!("{}/bookmarks", self.base_url);
         let mut params = Vec::new();
 
@@ -169,13 +181,29 @@ impl ApiClient {
             params.push(format!("page={}", p));
         }
         if let Some(l) = limit {
-            // USAMOS pageSize SEGÚN EL API REAL
             params.push(format!("pageSize={}", l));
+        }
+        if let Some(ref s) = search {
+            if !s.is_empty() {
+                params.push(format!("search={}", urlencoding::encode(s)));
+            }
+        }
+        if let Some(ref f) = folder {
+            if !f.is_empty() {
+                params.push(format!("folder={}", urlencoding::encode(f)));
+            }
+        }
+        if let Some(ref t) = tags {
+            if !t.is_empty() {
+                params.push(format!("tags={}", urlencoding::encode(t)));
+            }
         }
 
         if !params.is_empty() {
             url = format!("{}?{}", url, params.join("&"));
         }
+
+        tracing::info!("[API] get_favorites URL: {}", url);
 
         let response = self
             .client
@@ -186,32 +214,51 @@ impl ApiClient {
 
         if response.status().is_success() {
             let raw_text = response.text().await?;
-            tracing::debug!("[API] get_favorites page={:?} limit={:?} response_len={}", page, limit, raw_text.len());
-
             let data: ApiResponse<serde_json::Value> = serde_json::from_str(&raw_text)
                 .map_err(|e| ApiError::Message(format!("JSON parse error: {}", e)))?;
 
             if let Some(inner_data) = data.data {
-                // Log pagination metadata if present
-                if let Some(pagination) = inner_data.get("pagination") {
-                    tracing::info!("[API] Pagination: {}", pagination);
-                }
+                // Extract pagination metadata
+                let pagination = inner_data.get("pagination");
+                let total = pagination
+                    .and_then(|p| p.get("total"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0) as u32;
+                let total_pages = pagination
+                    .and_then(|p| p.get("totalPages").or_else(|| p.get("pages")))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(1) as u32;
+                let current_page = pagination
+                    .and_then(|p| p.get("page"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(1) as u32;
 
-                // If it's the nested structure { data: [], pagination: {} }
-                if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
-                    tracing::info!("[API] get_favorites page={:?}: {} items returned", page, list.len());
-                    return Ok(list.iter().cloned().collect());
-                }
-                // If it's a direct array
-                if let Some(list) = inner_data.as_array() {
-                    tracing::info!("[API] get_favorites page={:?}: {} items (direct array)", page, list.len());
-                    return Ok(list.iter().cloned().collect());
-                }
+                // Extract items from nested { data: [...] } or direct array
+                let items = if let Some(list) = inner_data.get("data").and_then(|v| v.as_array()) {
+                    list.iter().cloned().collect()
+                } else if let Some(list) = inner_data.as_array() {
+                    list.iter().cloned().collect()
+                } else {
+                    Vec::new()
+                };
 
-                tracing::warn!("[API] get_favorites: unexpected data structure: {}",
-                    serde_json::to_string(&inner_data).unwrap_or_default().chars().take(500).collect::<String>());
+                tracing::info!("[API] get_favorites page={}: {} items (total: {}, pages: {})",
+                    current_page, items.len(), total, total_pages);
+
+                return Ok(PaginatedResponse {
+                    items,
+                    total,
+                    total_pages,
+                    page: current_page,
+                });
             }
-            Ok(Vec::new())
+
+            Ok(PaginatedResponse {
+                items: Vec::new(),
+                total: 0,
+                total_pages: 0,
+                page: 1,
+            })
         } else {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();

@@ -34,16 +34,17 @@ describe('Favoritos CRUD Integration', () => {
     const newFav = { id: '2', title: 'New Fav', url: 'https://new.com', domain: 'new.com', tags: ['test'] };
 
     (invoke as any).mockImplementation((cmd: string, args: any) => {
-      if (cmd === 'favorites_get') return Promise.resolve(mockList);
+      if (cmd === 'favorites_get') return Promise.resolve({ items: mockList, total: mockList.length, totalPages: 1, page: 1 });
       if (cmd === 'favorites_create') return Promise.resolve(newFav);
       if (cmd === 'folders_get') return Promise.resolve([]);
+      if (cmd === 'tags_get') return Promise.resolve([]);
       if (cmd === 'metadata_fetch') return Promise.resolve({ title: '', description: '' });
       return Promise.resolve();
     });
 
     // Test Listing
     render(FavoritoGrid);
-    await favoritos.fetchAll();
+    await favoritos.fetchPage(true);
     await tick();
 
     expect(screen.getByText('Existing Fav')).toBeDefined();

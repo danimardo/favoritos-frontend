@@ -1,21 +1,23 @@
 <script lang="ts">
 	import FavoritoCard from './FavoritoCard.svelte';
-	import { favoritos, filteredByFolder } from '$lib/stores/favoritos';
+	import { favoritos } from '$lib/stores/favoritos';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { LayoutGrid, List, Search, ExternalLink, Hash, Pencil, Trash2, XCircle } from 'lucide-svelte';
 	import { apiClient } from '$lib/services/api-client';
-	import { normalize } from '$lib/utils';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FavoritoForm from './FavoritoForm.svelte';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
 	import type { Favorito } from '$lib/types/api';
+	import { onMount } from 'svelte';
 
 	let searchInput = $state<HTMLInputElement | null>(null);
-	
+
 	let selectedFavorito = $state<Favorito | null>(null);
 	let showEditDialog = $state(false);
 	let showDeleteDialog = $state(false);
+	let sentinelRef = $state<HTMLDivElement | null>(null);
+	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	export function focusSearch() {
 		if (searchInput) searchInput.focus();
@@ -38,51 +40,56 @@
 		}
 	}
 
-	// Lógica de filtrado protegida contra valores nulos/undefined
-	// Usa normalize() para búsqueda insensible a acentos y mayúsculas
-	let filteredItems = $derived(
-		$filteredByFolder.filter(item => {
-			const query = normalize($favoritos.searchQuery.trim());
-			if (!query) return true;
+	function handleSearchInput(value: string) {
+		favoritos.setSearchQuery(value);
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			favoritos.executeSearch();
+		}, 400);
+	}
 
-			const title = normalize(item.title || '');
-			const url = normalize(item.url || '');
-			const desc = normalize(item.description || '');
-			const notes = normalize(item.notes || '');
-			const folderName = normalize(item.folder?.name || '');
+	function clearSearch() {
+		favoritos.setSearchQuery('');
+		favoritos.executeSearch();
+		focusSearch();
+	}
 
-			// Búsqueda en textos principales
-			if (title.includes(query) || url.includes(query) || desc.includes(query) || notes.includes(query) || folderName.includes(query)) {
-				return true;
-			}
+	// Handle tag click in list view - search by tag
+	function handleTagClick(tag: any) {
+		const tagName = typeof tag === 'string' ? tag : tag.name;
+		favoritos.setSearchQuery(tagName);
+		favoritos.executeSearch();
+	}
 
-			// Búsqueda en etiquetas (pueden ser objetos o strings)
-			const inTags = item.tags?.some(tag => {
-				const tagName = normalize(typeof tag === 'string' ? tag : tag?.name || '');
-				return tagName.includes(query);
-			}) ?? false;
-
-			return inTags;
-		})
-	);
-
+	// IntersectionObserver for infinite scroll
+	$effect(() => {
+		if (sentinelRef) {
+			const observer = new IntersectionObserver((entries) => {
+				if (entries[0].isIntersecting && $favoritos.hasMore && !$favoritos.loadingMore && !$favoritos.loading) {
+					favoritos.fetchPage(false);
+				}
+			}, { rootMargin: '200px' });
+			observer.observe(sentinelRef);
+			return () => observer.disconnect();
+		}
+	});
 </script>
 
 <div class="space-y-6">
 	<div class="flex flex-col sm:flex-row items-center gap-4 bg-white/50 p-2 rounded-xl border border-silver/20">
 		<div class="relative flex-1 w-full group">
 			<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-greyOlive" />
-			<Input 
+			<Input
 				bind:ref={searchInput}
-				placeholder="Buscar en esta carpeta..." 
+				placeholder="Buscar favoritos..."
 				value={$favoritos.searchQuery}
-				oninput={(e) => favoritos.setSearchQuery((e.target as HTMLInputElement).value)}
+				oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
 				class="pl-10 pr-10 bg-white border-silver/50 focus:border-taupe h-11"
 			/>
 			{#if $favoritos.searchQuery}
-				<button 
+				<button
 					type="button"
-					onclick={() => { favoritos.setSearchQuery(''); focusSearch(); }}
+					onclick={clearSearch}
 					class="absolute right-3 top-1/2 -translate-y-1/2 text-greyOlive hover:text-taupe transition-colors p-1 z-10"
 					title="Limpiar búsqueda"
 				>
@@ -92,17 +99,17 @@
 		</div>
 
 		<div class="flex items-center gap-1 bg-silver/20 p-1 rounded-lg">
-			<Button 
-				variant="ghost" 
-				size="icon" 
+			<Button
+				variant="ghost"
+				size="icon"
 				class="h-9 w-9 {$favoritos.viewMode === 'grid' ? 'bg-white text-taupe shadow-sm' : 'text-greyOlive'}"
 				onclick={() => favoritos.setViewMode('grid')}
 			>
 				<LayoutGrid class="w-4 h-4" />
 			</Button>
-			<Button 
-				variant="ghost" 
-				size="icon" 
+			<Button
+				variant="ghost"
+				size="icon"
 				class="h-9 w-9 {$favoritos.viewMode === 'list' ? 'bg-white text-taupe shadow-sm' : 'text-greyOlive'}"
 				onclick={() => favoritos.setViewMode('list')}
 			>
@@ -111,19 +118,26 @@
 		</div>
 	</div>
 
+	<!-- Info de paginación -->
+	{#if $favoritos.total > 0}
+		<p class="text-xs text-greyOlive text-right">
+			Mostrando {$favoritos.items.length} de {$favoritos.total} favoritos
+		</p>
+	{/if}
+
 	{#if $favoritos.viewMode === 'grid'}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-			{#each filteredItems as favorito (favorito.id)}
+			{#each $favoritos.items as favorito (favorito.id)}
 				<FavoritoCard {favorito} />
 			{:else}
 				{#if !$favoritos.loading}
 					<div class="col-span-full py-20 text-center text-greyOlive border-2 border-dashed border-silver/30 rounded-2xl bg-silver/5">
 						<Search class="w-12 h-12 mx-auto mb-4 opacity-20" />
 						{#if $favoritos.searchQuery}
-							<p class="text-lg">No se encontró "<span class="text-taupe font-bold">{$favoritos.searchQuery}</span>" en esta vista</p>
-							<p class="text-xs mt-2 italic">Prueba a seleccionar "Todos" en la barra lateral o haz scroll hacia abajo</p>
+							<p class="text-lg">No se encontró "<span class="text-taupe font-bold">{$favoritos.searchQuery}</span>"</p>
+							<p class="text-xs mt-2 italic">Prueba con otros términos de búsqueda</p>
 						{:else}
-							<p class="text-lg">Esta carpeta está vacía</p>
+							<p class="text-lg">No hay favoritos en esta vista</p>
 						{/if}
 					</div>
 				{/if}
@@ -142,8 +156,8 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-silver/20">
-					{#each filteredItems as favorito (favorito.id)}
-						<tr 
+					{#each $favoritos.items as favorito (favorito.id)}
+						<tr
 							class="hover:bg-silver/5 transition-colors group cursor-default select-none"
 							ondblclick={() => handleEdit(favorito)}
 						>
@@ -158,8 +172,8 @@
 							</td>
 							<td class="px-4 py-3">
 								<div class="flex flex-col">
-									<button 
-										onclick={() => apiClient.openUrl(favorito.url)} 
+									<button
+										onclick={() => apiClient.openUrl(favorito.url)}
 										class="text-sm font-bold text-taupe hover:underline text-left truncate max-w-[200px] md:max-w-[300px]"
 									>
 										{favorito.title || 'Sin título'}
@@ -173,8 +187,8 @@
 							<td class="px-4 py-3 hidden lg:table-cell">
 								<div class="flex flex-wrap gap-1">
 									{#each (favorito.tags || []).slice(0, 3) as tag}
-										<button 
-											onclick={(e) => { e.stopPropagation(); favoritos.setSearchQuery(typeof tag === 'string' ? tag : tag.name); }}
+										<button
+											onclick={(e) => { e.stopPropagation(); handleTagClick(tag); }}
 											class="px-1.5 py-0.5 rounded bg-silver/20 text-[9px] text-taupe border border-silver/30 hover:bg-taupe hover:text-parchment transition-colors"
 										>
 											{typeof tag === 'string' ? tag : tag.name}
@@ -209,17 +223,24 @@
 		<div class="flex justify-center py-8">
 			<div class="flex items-center gap-3 text-taupe bg-white px-4 py-2 rounded-full shadow-sm border border-silver/30">
 				<div class="w-4 h-4 border-2 border-taupe/20 border-t-taupe rounded-full animate-spin"></div>
-				<span class="text-sm font-medium">
-					{#if $favoritos.items.length > 0}
-						Sincronizando... {$favoritos.items.length} favoritos cargados
-					{:else}
-						Cargando datos...
-					{/if}
-				</span>
+				<span class="text-sm font-medium">Cargando datos...</span>
 			</div>
 		</div>
 	{/if}
 
+	{#if $favoritos.loadingMore}
+		<div class="flex justify-center py-4">
+			<div class="flex items-center gap-2 text-greyOlive">
+				<div class="w-4 h-4 border-2 border-taupe/20 border-t-taupe rounded-full animate-spin"></div>
+				<span class="text-sm">Cargando más...</span>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Sentinel para scroll infinito -->
+	{#if $favoritos.hasMore}
+		<div bind:this={sentinelRef} class="h-4"></div>
+	{/if}
 </div>
 
 {#if selectedFavorito}
@@ -232,9 +253,9 @@
 		</Dialog.Content>
 	</Dialog.Root>
 
-	<DeleteConfirmDialog 
-		bind:open={showDeleteDialog} 
-		onConfirm={confirmDelete} 
+	<DeleteConfirmDialog
+		bind:open={showDeleteDialog}
+		onConfirm={confirmDelete}
 		title="¿Eliminar favorito?"
 		description={`¿Estás seguro de que deseas eliminar "${selectedFavorito.title || 'este favorito'}"?`}
 	/>

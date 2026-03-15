@@ -41,7 +41,8 @@
 		if (refreshing) return;
 		refreshing = true;
 		try {
-			await favoritos.fetchAll();
+			await favoritos.loadFoldersAndTags();
+			await favoritos.fetchPage(true);
 		} finally {
 			setTimeout(() => {
 				refreshing = false;
@@ -98,7 +99,7 @@
 				<span class="text-sm">Todos</span>
 			</div>
 			<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-normal">
-				{$favoritos.items.length}
+				{$favoritos.total || $favoritos.items.length}
 			</span>
 		</button>
 
@@ -248,7 +249,7 @@
 				<Info class="w-3 h-3" />
 				<span>v0.3.2</span>
 			</div>
-			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.items.length} ítems</span>
+			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.total || $favoritos.items.length} ítems</span>
 		</div>
 	</div>
 </div>

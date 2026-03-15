@@ -117,8 +117,10 @@
 - El campo `visitCount` se actualiza automáticamente al abrir un link desde la app.
 
 ### 4.2 Rendimiento
-- **Carga Completa**: Al iniciar, la aplicación pagina automáticamente la API para cargar todos los favoritos del usuario. El store se actualiza progresivamente durante la carga para que el usuario vea datos mientras se completa. Esto garantiza que el filtrado local, la sidebar de tags, la detección de duplicados y la búsqueda operen sobre el conjunto completo de datos.
-- **Filtrado Local**: Respuesta instantánea (<50ms) en las búsquedas sobre los datos cargados. Todas las búsquedas y filtros son insensibles a acentos/diacríticos y mayúsculas/minúsculas (normalización Unicode NFD).
+- **Paginación del Servidor**: Los favoritos se cargan bajo demanda en páginas de 50 elementos mediante scroll infinito (IntersectionObserver). El store gestiona `page`, `total`, `totalPages`, `hasMore` y `loadingMore` para controlar la paginación.
+- **Búsqueda del Servidor**: La búsqueda se ejecuta en el servidor (parámetro `search` de la API) con debounce de 400ms, operando sobre toda la base de datos. El filtrado por carpeta y etiqueta también se delega al servidor (parámetros `folder` y `tags`).
+- **Detección de Duplicados**: Cuando el servidor responde 409 Conflict al crear un favorito, la aplicación busca el duplicado en el servidor vía API (`getFavorites({ search: url })`) en lugar de buscar solo entre los ítems cargados localmente.
+- **Normalización**: Todas las búsquedas y filtros locales (sidebar) son insensibles a acentos/diacríticos y mayúsculas/minúsculas (normalización Unicode NFD).
 
 ---
 

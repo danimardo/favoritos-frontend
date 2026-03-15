@@ -1,14 +1,15 @@
 // API Client service - HTTP client for Favoritos API
 import { invoke } from '@tauri-apps/api/core';
-import type { 
-	Favorito, 
-	FavoritoInput, 
-	FavoritoUpdate, 
-	Carpeta, 
-	Etiqueta, 
+import type {
+	Favorito,
+	FavoritoInput,
+	FavoritoUpdate,
+	Carpeta,
+	Etiqueta,
 	ImportResult,
 	AuthResponse,
-	User
+	User,
+	PaginatedFavoritos
 } from '$lib/types/api';
 
 export const apiClient = {
@@ -26,8 +27,14 @@ export const apiClient = {
 	},
 
 	// Favorites
-	async getFavorites(page?: number, limit?: number): Promise<Favorito[]> {
-		return invoke<Favorito[]>('favorites_get', { page, limit });
+	async getFavorites(params: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		folder?: string;
+		tags?: string;
+	} = {}): Promise<PaginatedFavoritos> {
+		return invoke<PaginatedFavoritos>('favorites_get', params);
 	},
 
 	async getFavoriteById(id: string): Promise<Favorito> {

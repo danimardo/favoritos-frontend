@@ -27,7 +27,7 @@
 
 	onMount(async () => {
 		if ($favoritos.items.length === 0) {
-			await favoritos.fetchAll();
+			await favoritos.fetchPage(true);
 		}
 	});
 

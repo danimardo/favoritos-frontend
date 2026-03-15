@@ -3,7 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { favoritos } from '$lib/stores/favoritos';
-	import { get } from 'svelte/store';
+	import { apiClient } from '$lib/services/api-client';
 	import type { Favorito, FavoritoInput } from '$lib/types/api';
 	import FolderSelector from './FolderSelector.svelte';
 	import TagInput from './TagInput.svelte';
@@ -152,25 +152,30 @@
 			const errMsg = e instanceof Error ? e.message : String(e);
 			// Detectar conflicto 409: el favorito ya existe
 			if (errMsg.includes('409') || errMsg.includes('Conflict')) {
-				const existing = get(favoritos).items.find(
-					(item) => item.url.toLowerCase() === url.trim().toLowerCase()
-				);
-				if (existing) {
-					// Cargar datos existentes en el formulario para edición
-					createdId = existing.id;
-					if (existing.title) title = existing.title;
-					if (existing.description) description = existing.description;
-					if (existing.notes) notes = existing.notes;
-					if (existing.tags && existing.tags.length > 0) {
-						tags = existing.tags.map(t => typeof t === 'string' ? t : t.name);
+				try {
+					// Buscar en el servidor por URL para obtener los datos del duplicado
+					const searchResult = await apiClient.getFavorites({ search: url.trim(), limit: 5 });
+					const existing = searchResult.items.find(
+						(item) => item.url.toLowerCase() === url.trim().toLowerCase()
+					);
+					if (existing) {
+						createdId = existing.id;
+						if (existing.title) title = existing.title;
+						if (existing.description) description = existing.description;
+						if (existing.notes) notes = existing.notes;
+						if (existing.tags && existing.tags.length > 0) {
+							tags = existing.tags.map(t => typeof t === 'string' ? t : t.name);
+						}
+						if (existing.folderId || existing.folder?.id) {
+							folderId = existing.folderId || existing.folder?.id || '';
+						}
+						duplicateDetected = true;
+						error = '';
+					} else {
+						error = 'Este favorito ya existe, pero no se pudo localizar. Intenta refrescar la lista.';
 					}
-					if (existing.folderId || existing.folder?.id) {
-						folderId = existing.folderId || existing.folder?.id || '';
-					}
-					duplicateDetected = true;
-					error = '';
-				} else {
-					error = 'Este favorito ya existe, pero no se encontró en los datos locales. Intenta refrescar la lista.';
+				} catch {
+					error = 'Este favorito ya existe, pero hubo un error al buscar sus datos.';
 				}
 			} else {
 				error = errMsg;

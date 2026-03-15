@@ -144,10 +144,13 @@ pub async fn favorites_get(
     app: AppHandle,
     page: Option<u32>,
     limit: Option<u32>,
-) -> Result<Vec<serde_json::Value>, String> {
+    search: Option<String>,
+    folder: Option<String>,
+    tags: Option<String>,
+) -> Result<crate::api::PaginatedResponse, String> {
     let client = get_api_client(&app)?;
     client
-        .get_favorites(page, limit)
+        .get_favorites(page, limit, search, folder, tags)
         .await
         .map_err(|e| e.to_string())
 }

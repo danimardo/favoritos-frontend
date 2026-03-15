@@ -12,8 +12,8 @@ describe('Search Utility', () => {
     visitCount: 0,
     isArchived: false,
     isRead: false,
-    tags: i % 3 === 0 ? ['tag1', 'tag2'] : ['other'],
-    folder: i % 5 === 0 ? 'Work' : 'Personal',
+    tags: i % 3 === 0 ? [{ id: '1', name: 'tag1' }, { id: '2', name: 'tag2' }] : [{ id: '3', name: 'other' }],
+    folder: i % 5 === 0 ? { id: '1', name: 'Work' } : { id: '2', name: 'Personal' },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }));
@@ -37,7 +37,7 @@ describe('Search Utility', () => {
   it('should filter favorites by tags', () => {
     const result = filterFavoritos(mockFavorites, 'tag1');
     expect(result.length).toBeGreaterThan(0);
-    expect(result.every(f => f.tags?.includes('tag1'))).toBe(true);
+    expect(result.every(f => f.tags?.some((t: any) => (typeof t === 'string' ? t : t.name) === 'tag1'))).toBe(true);
   });
 
   it('should filter favorites by folder', () => {

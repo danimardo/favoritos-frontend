@@ -54,7 +54,7 @@
 			}
 
 			if (result && (result.imported > 0 || result.updated > 0)) {
-				await favoritos.fetchAll();
+				await favoritos.fetchPage(true);
 				const parts = [];
 				if (result.imported > 0) parts.push(`${result.imported} importados`);
 				if (result.updated > 0) parts.push(`${result.updated} actualizados`);

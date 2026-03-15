@@ -109,7 +109,7 @@
 
 		const created = results.filter((r) => r.status === 'ok').length;
 		if (created > 0) {
-			await favoritos.fetchAll();
+			await favoritos.fetchPage(true);
 		}
 	}
 

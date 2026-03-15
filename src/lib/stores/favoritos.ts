@@ -10,8 +10,11 @@ interface FavoritosState {
 	folders: Carpeta[];
 	allTags: Etiqueta[];
 	loading: boolean;
+	loadingMore: boolean;
 	error: string | null;
 	page: number;
+	total: number;
+	totalPages: number;
 	hasMore: boolean;
 	selectedFolderId: string | null;
 	selectedTag: string | null;
@@ -24,139 +27,161 @@ const initialState: FavoritosState = {
 	folders: [],
 	allTags: [],
 	loading: false,
+	loadingMore: false,
 	error: null,
 	page: 1,
-	hasMore: true,
+	total: 0,
+	totalPages: 0,
+	hasMore: false,
 	selectedFolderId: null,
 	selectedTag: null,
 	viewMode: 'grid',
 	searchQuery: ''
 };
 
+const PAGE_SIZE = 50;
+
 function createFavoritosStore() {
 	const { subscribe, set, update } = writable<FavoritosState>(initialState);
 	let fetchInProgress = false;
 
+	function getServerParams(state: FavoritosState, pageToLoad: number) {
+		const params: Record<string, any> = {
+			page: pageToLoad,
+			limit: PAGE_SIZE,
+		};
+		if (state.searchQuery.trim()) params.search = state.searchQuery.trim();
+		if (state.selectedFolderId) params.folder = state.selectedFolderId;
+		if (state.selectedTag) params.tags = state.selectedTag;
+		return params;
+	}
+
 	return {
 		subscribe,
 
-		async fetchAll() {
-			if (fetchInProgress) {
-				console.log('[Favoritos] fetchAll ya en curso, ignorando llamada duplicada');
-				return;
+		async fetchPage(reset: boolean = true) {
+			const state = get({ subscribe });
+
+			if (reset) {
+				if (fetchInProgress) {
+					console.log('[Favoritos] fetchPage ya en curso, ignorando');
+					return;
+				}
+				fetchInProgress = true;
+				update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
+			} else {
+				if (state.loadingMore || !state.hasMore) return;
+				update((s) => ({ ...s, loadingMore: true }));
 			}
-			fetchInProgress = true;
-			update((s) => ({ ...s, loading: true, error: null, page: 1, items: [] }));
+
+			try {
+				const pageToLoad = reset ? 1 : state.page + 1;
+				const params = getServerParams(reset ? { ...state, page: 1 } : state, pageToLoad);
+
+				// Load folders and tags only on initial load
+				if (reset && state.folders.length === 0) {
+					const [folders, allTags] = await Promise.all([
+						apiClient.getFolders(),
+						apiClient.getTags()
+					]);
+					update((s) => ({ ...s, folders, allTags }));
+				}
+
+				console.log(`[Favoritos] Cargando página ${pageToLoad}...`, params);
+				const result = await apiClient.getFavorites(params);
+				console.log(`[Favoritos] Página ${pageToLoad}: ${result.items.length} items (total: ${result.total}, pages: ${result.totalPages})`);
+
+				update((s) => ({
+					...s,
+					items: reset ? result.items : [...s.items, ...result.items],
+					page: pageToLoad,
+					total: result.total,
+					totalPages: result.totalPages,
+					hasMore: pageToLoad < result.totalPages,
+					loading: false,
+					loadingMore: false,
+				}));
+
+				if (reset) {
+					await databaseService.saveFavoritos(get({ subscribe }).items);
+				}
+			} catch (error) {
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				if (reset) {
+					const localItems = await databaseService.getAllFavoritos();
+					if (localItems.length > 0) {
+						update((s) => ({ ...s, items: localItems, loading: false, error: null, hasMore: false }));
+					} else {
+						update((s) => ({ ...s, loading: false, error: errorMsg }));
+						await tauriNotifications.showError(`Error de conexión: ${errorMsg}`);
+					}
+				} else {
+					update((s) => ({ ...s, loadingMore: false, error: errorMsg }));
+				}
+			} finally {
+				if (reset) fetchInProgress = false;
+			}
+		},
+
+		async loadFoldersAndTags() {
 			try {
 				const [folders, allTags] = await Promise.all([
 					apiClient.getFolders(),
 					apiClient.getTags()
 				]);
-				let allItems: Favorito[] = [];
-				let currentPage = 1;
-				let hasMore = true;
-
-				while (hasMore) {
-					console.log(`[Favoritos] Cargando página ${currentPage}...`);
-					const pageItems = await apiClient.getFavorites(currentPage, 100);
-					console.log(`[Favoritos] Página ${currentPage}: ${pageItems?.length ?? 0} items recibidos`);
-
-					if (!pageItems || pageItems.length === 0) {
-						console.log(`[Favoritos] Página ${currentPage}: vacía, fin de la paginación`);
-						hasMore = false;
-					} else {
-						allItems = [...allItems, ...pageItems];
-						// Actualizar el store progresivamente para que el usuario vea datos
-						const items = allItems.filter(item => !item.isArchived && !item.isRead);
-						console.log(`[Favoritos] Acumulados: ${allItems.length} totales, ${items.length} activos (filtrados isArchived/isRead)`);
-						update((s) => ({
-							...s,
-							items,
-							folders,
-							allTags,
-							page: currentPage,
-							hasMore: pageItems.length >= 100
-						}));
-						hasMore = pageItems.length >= 100;
-						currentPage++;
-					}
-				}
-
-				const items = allItems.filter(item => !item.isArchived && !item.isRead);
-				console.log(`[Favoritos] Carga completa: ${items.length} favoritos activos de ${allItems.length} totales, ${allTags.length} etiquetas.`);
-
-				update((s) => ({
-					...s,
-					items,
-					folders,
-					allTags,
-					loading: false,
-					hasMore: false
-				}));
-
-				await databaseService.saveFavoritos(items);
-			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				const localItems = await databaseService.getAllFavoritos();
-				if (localItems.length > 0) {
-					update((s) => ({ ...s, items: localItems, loading: false, error: null, hasMore: false }));
-				} else {
-					update((s) => ({ ...s, loading: false, error: errorMsg }));
-					await tauriNotifications.showError(`Error de conexión: ${errorMsg}`);
-				}
-			} finally {
-				fetchInProgress = false;
+				update((s) => ({ ...s, folders, allTags }));
+			} catch (e) {
+				console.warn('[Favoritos] Error al cargar folders/tags:', e);
 			}
 		},
 
 		async create(payload: FavoritoInput) {
-			update((s) => ({ ...s, loading: true, error: null }));
+			update((s) => ({ ...s, error: null }));
 			try {
 				const newItem = await apiClient.createFavorite(payload);
 				update((s) => ({
 					...s,
 					items: [newItem, ...s.items],
-					loading: false
+					total: s.total + 1,
 				}));
 				return newItem;
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({ ...s, loading: false, error: errorMsg }));
+				update((s) => ({ ...s, error: errorMsg }));
 				await tauriNotifications.showError(`Error al crear favorito: ${errorMsg}`);
 				throw error;
 			}
 		},
 
 		async update(id: string, payload: FavoritoUpdate) {
-			update((s) => ({ ...s, loading: true, error: null }));
+			update((s) => ({ ...s, error: null }));
 			try {
 				const updatedItem = await apiClient.updateFavorite(id, payload);
 				update((s) => ({
 					...s,
 					items: s.items.map((item) => (item.id === id ? updatedItem : item)),
-					loading: false
 				}));
 				return updatedItem;
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({ ...s, loading: false, error: errorMsg }));
+				update((s) => ({ ...s, error: errorMsg }));
 				await tauriNotifications.showError(`Error al actualizar favorito: ${errorMsg}`);
 				throw error;
 			}
 		},
 
 		async delete(id: string) {
-			update((s) => ({ ...s, loading: true, error: null }));
+			update((s) => ({ ...s, error: null }));
 			try {
 				await apiClient.deleteFavorite(id);
 				update((s) => ({
 					...s,
 					items: s.items.filter((item) => item.id !== id),
-					loading: false
+					total: Math.max(0, s.total - 1),
 				}));
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
-				update((s) => ({ ...s, loading: false, error: errorMsg }));
+				update((s) => ({ ...s, error: errorMsg }));
 				await tauriNotifications.showError(`Error al eliminar favorito: ${errorMsg}`);
 				throw error;
 			}
@@ -165,7 +190,7 @@ function createFavoritosStore() {
 		async exportAll() {
 			console.log('[Export] Iniciando exportación total...');
 			update((s) => ({ ...s, loading: true }));
-			
+
 			try {
 				let allExport: any[] = [];
 				let currentPage = 1;
@@ -173,18 +198,15 @@ function createFavoritosStore() {
 
 				while (hasMore) {
 					console.log(`[Export] Solicitando página ${currentPage} (pageSize: 100)...`);
-					const pageItems = await apiClient.getFavorites(currentPage, 100);
-					console.log(`[Export] Recibidos ${pageItems.length} elementos`);
+					const result = await apiClient.getFavorites({ page: currentPage, limit: 100 });
+					console.log(`[Export] Recibidos ${result.items.length} elementos`);
 
-					if (!pageItems || pageItems.length === 0) {
+					if (!result.items || result.items.length === 0) {
 						hasMore = false;
 					} else {
-						allExport = [...allExport, ...pageItems];
-						if (pageItems.length < 100) {
-							hasMore = false;
-						} else {
-							currentPage++;
-						}
+						allExport = [...allExport, ...result.items];
+						hasMore = currentPage < result.totalPages;
+						currentPage++;
 					}
 				}
 
@@ -208,7 +230,7 @@ function createFavoritosStore() {
 
 				console.log('[Export] Abriendo diálogo de guardado...');
 				const saved = await invoke<boolean>('favorites_export', { jsonData: jsonString });
-				
+
 				console.log('[Export] Diálogo cerrado. Guardado:', saved);
 				if (saved) {
 					await tauriNotifications.showSuccess("Exportación completada con éxito");
@@ -243,19 +265,25 @@ function createFavoritosStore() {
 		},
 
 		selectFolder(folderId: string | null) {
-			update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null }));
+			update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null, searchQuery: '' }));
 			invoke('preference_set', { key: 'selected_folder_id', value: folderId || '' }).catch(console.warn);
 			invoke('preference_set', { key: 'selected_tag', value: '' }).catch(console.warn);
+			this.fetchPage(true);
 		},
 
 		selectTag(tag: string | null) {
-			update((s) => ({ ...s, selectedTag: tag, selectedFolderId: null }));
+			update((s) => ({ ...s, selectedTag: tag, selectedFolderId: null, searchQuery: '' }));
 			invoke('preference_set', { key: 'selected_tag', value: tag || '' }).catch(console.warn);
 			invoke('preference_set', { key: 'selected_folder_id', value: '' }).catch(console.warn);
+			this.fetchPage(true);
 		},
 
 		setSearchQuery(query: string) {
 			update((s) => ({ ...s, searchQuery: query }));
+		},
+
+		async executeSearch() {
+			await this.fetchPage(true);
 		},
 
 		setViewMode(mode: 'grid' | 'list') {
@@ -304,24 +332,7 @@ function createFavoritosStore() {
 
 export const favoritos = createFavoritosStore();
 
-// Derived store for filtered items by folder or tag
-export const filteredByFolder = derived(favoritos, ($favs) => {
-	if ($favs.selectedTag) {
-		return $favs.items.filter(item =>
-			item.tags?.some(t => {
-				const tagName = typeof t === 'string' ? t : t.name;
-				return tagName === $favs.selectedTag;
-			})
-		);
-	}
-	if (!$favs.selectedFolderId) return $favs.items;
-	return $favs.items.filter(item =>
-		item.folderId === $favs.selectedFolderId ||
-		item.folder?.id === $favs.selectedFolderId
-	);
-});
-
-// Derived store for folder counts
+// Derived store for folder counts (from loaded items - approximate)
 export const folderCounts = derived(favoritos, ($favs) => {
 	const counts: Record<string, number> = {};
 	$favs.items.forEach(item => {

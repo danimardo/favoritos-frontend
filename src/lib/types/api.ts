@@ -80,6 +80,13 @@ export interface Paginacion {
 	pages: number;
 }
 
+export interface PaginatedFavoritos {
+	items: Favorito[];
+	total: number;
+	totalPages: number;
+	page: number;
+}
+
 export interface ApiResponse<T> {
 	success: boolean;
 	data?: T;

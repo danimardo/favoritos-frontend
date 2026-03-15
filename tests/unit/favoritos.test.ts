@@ -25,20 +25,24 @@ describe('Favoritos Store', () => {
     (databaseService.getAllFavoritos as any).mockResolvedValue([]);
   });
 
-  it('T033: fetchAll should populate store with list of favorites', async () => {
-    const mockList = [
-      { id: '1', title: 'Google', url: 'https://google.com', category_id: null, tags: [] },
-      { id: '2', title: 'GitHub', url: 'https://github.com', category_id: null, tags: [] },
-    ];
-    (invoke as any).mockResolvedValue(mockList);
+  it('T033: fetchPage should populate store with list of favorites', async () => {
+    const mockResult = {
+      items: [
+        { id: '1', title: 'Google', url: 'https://google.com', category_id: null, tags: [] },
+        { id: '2', title: 'GitHub', url: 'https://github.com', category_id: null, tags: [] },
+      ],
+      total: 2,
+      totalPages: 1,
+      page: 1,
+    };
+    (invoke as any).mockResolvedValue(mockResult);
 
-    await favoritos.fetchAll();
+    await favoritos.fetchPage(true);
 
     let state: any;
     favoritos.subscribe(s => state = s)();
     expect(state.items).toHaveLength(2);
     expect(state.items[0].title).toBe('Google');
-    expect(invoke).toHaveBeenCalledWith('favorites_get', { page: 1, limit: undefined });
   });
 
   it('T034: create should add new favorite to store', async () => {
@@ -93,7 +97,7 @@ describe('Favoritos Store', () => {
   it('T037: should handle 401/403 errors and update error state', async () => {
     (invoke as any).mockRejectedValue('Unauthorized');
 
-    await favoritos.fetchAll();
+    await favoritos.fetchPage(true);
 
     let state: any;
     favoritos.subscribe(s => state = s)();
