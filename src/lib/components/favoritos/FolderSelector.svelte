@@ -56,13 +56,13 @@
 	}
 
 	let selectedLabel = $derived(
-		value 
-			? (folders.find(f => f.id === value)?.name || "Carpeta no encontrada") 
+		value
+			? (folders.find(f => String(f.id) === String(value))?.name || "Carpeta no encontrada")
 			: "Sin carpeta"
 	);
 
-	function closeAndSelect(id: string) {
-		value = id;
+	function closeAndSelect(id: string | number) {
+		value = String(id);
 		open = false;
 	}
 </script>
@@ -126,7 +126,7 @@
 										class="text-taupe flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-silver/20 aria-selected:bg-silver/20 rounded-sm"
 									>
 										<div class="flex items-center gap-2">
-											<Check class={cn("h-4 w-4", value === folder.id ? "opacity-100" : "opacity-0")} />
+											<Check class={cn("h-4 w-4", String(value) === String(folder.id) ? "opacity-100" : "opacity-0")} />
 											{folder.name}
 										</div>
 										{#if folder.bookmarkCount || folder.count}

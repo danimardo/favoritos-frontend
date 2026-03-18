@@ -14,6 +14,7 @@ interface FavoritosState {
 	error: string | null;
 	page: number;
 	total: number;
+	globalTotal: number;
 	totalPages: number;
 	hasMore: boolean;
 	selectedFolderId: string | null;
@@ -31,6 +32,7 @@ const initialState: FavoritosState = {
 	error: null,
 	page: 1,
 	total: 0,
+	globalTotal: 0,
 	totalPages: 0,
 	hasMore: false,
 	selectedFolderId: null,
@@ -51,7 +53,7 @@ function createFavoritosStore() {
 			limit: PAGE_SIZE,
 		};
 		if (state.searchQuery.trim()) params.search = state.searchQuery.trim();
-		if (state.selectedFolderId) params.folder = state.selectedFolderId;
+		if (state.selectedFolderId) params.folder = String(state.selectedFolderId);
 		if (state.selectedTag) {
 			// Resolve tag name → tag ID for the API (expects tagId param)
 			const tag = state.allTags.find(t => t.name === state.selectedTag);
@@ -84,13 +86,14 @@ function createFavoritosStore() {
 				const pageToLoad = reset ? 1 : state.page + 1;
 				const params = getServerParams(reset ? { ...state, page: 1 } : state, pageToLoad);
 
-				// Load folders and tags only on initial load
+				// Load folders, tags, and global total only on initial load
 				if (reset && state.folders.length === 0) {
-					const [folders, allTags] = await Promise.all([
+					const [folders, allTags, globalCount] = await Promise.all([
 						apiClient.getFolders(),
-						apiClient.getTags()
+						apiClient.getTags(),
+						apiClient.getFavorites({ page: 1, limit: 1 })
 					]);
-					update((s) => ({ ...s, folders, allTags }));
+					update((s) => ({ ...s, folders, allTags, globalTotal: globalCount.total }));
 				}
 
 				console.log(`[Favoritos] Cargando página ${pageToLoad}...`, params);
@@ -98,11 +101,15 @@ function createFavoritosStore() {
 				const hasMorePages = pageToLoad < result.totalPages;
 				console.log(`[Favoritos] Página ${pageToLoad}: ${result.items.length} items (total: ${result.total}, pages: ${result.totalPages}, hasMore: ${hasMorePages})`);
 
+				const currentState = get({ subscribe });
+				const isUnfiltered = !currentState.selectedFolderId && !currentState.selectedTag && !currentState.searchQuery.trim();
+
 				update((s) => ({
 					...s,
 					items: reset ? result.items : [...s.items, ...result.items],
 					page: pageToLoad,
 					total: result.total,
+					globalTotal: isUnfiltered ? result.total : s.globalTotal,
 					totalPages: result.totalPages,
 					hasMore: pageToLoad < result.totalPages,
 					loading: false,
@@ -132,11 +139,12 @@ function createFavoritosStore() {
 
 		async loadFoldersAndTags() {
 			try {
-				const [folders, allTags] = await Promise.all([
+				const [folders, allTags, globalCount] = await Promise.all([
 					apiClient.getFolders(),
-					apiClient.getTags()
+					apiClient.getTags(),
+					apiClient.getFavorites({ page: 1, limit: 1 })
 				]);
-				update((s) => ({ ...s, folders, allTags }));
+				update((s) => ({ ...s, folders, allTags, globalTotal: globalCount.total }));
 			} catch (e) {
 				console.warn('[Favoritos] Error al cargar folders/tags:', e);
 			}
@@ -150,6 +158,7 @@ function createFavoritosStore() {
 					...s,
 					items: [newItem, ...s.items],
 					total: s.total + 1,
+					globalTotal: s.globalTotal + 1,
 				}));
 				return newItem;
 			} catch (error) {
@@ -185,6 +194,7 @@ function createFavoritosStore() {
 					...s,
 					items: s.items.filter((item) => item.id !== id),
 					total: Math.max(0, s.total - 1),
+					globalTotal: Math.max(0, s.globalTotal - 1),
 				}));
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : String(error);
@@ -272,8 +282,9 @@ function createFavoritosStore() {
 		},
 
 		selectFolder(folderId: string | null) {
-			update((s) => ({ ...s, selectedFolderId: folderId, selectedTag: null, searchQuery: '' }));
-			invoke('preference_set', { key: 'selected_folder_id', value: folderId || '' }).catch(console.warn);
+			const id = folderId != null ? String(folderId) : null;
+			update((s) => ({ ...s, selectedFolderId: id, selectedTag: null, searchQuery: '' }));
+			invoke('preference_set', { key: 'selected_folder_id', value: id || '' }).catch(console.warn);
 			invoke('preference_set', { key: 'selected_tag', value: '' }).catch(console.warn);
 			this.fetchPage(true);
 		},

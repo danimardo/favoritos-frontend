@@ -190,7 +190,7 @@ impl ApiClient {
         }
         if let Some(ref f) = folder {
             if !f.is_empty() {
-                params.push(format!("folder={}", urlencoding::encode(f)));
+                params.push(format!("folderId={}", urlencoding::encode(f)));
             }
         }
         if let Some(ref t) = tags {

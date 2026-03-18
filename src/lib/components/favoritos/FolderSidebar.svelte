@@ -140,7 +140,7 @@
 				<span class="text-sm">Todos</span>
 			</div>
 			<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-normal">
-				{$favoritos.total || $favoritos.items.length}
+				{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length}
 			</span>
 		</button>
 
@@ -181,10 +181,10 @@
 			{#each sortedFolders.items as folder}
 				<button
 					onclick={() => selectFolder(folder.id)}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === folder.id ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {String($favoritos.selectedFolderId) === String(folder.id) ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
 				>
 					<div class="flex items-center gap-3">
-						{#if $favoritos.selectedFolderId === folder.id}
+						{#if String($favoritos.selectedFolderId) === String(folder.id)}
 							<FolderOpen class="w-4 h-4 text-powderBlush" />
 						{:else}
 							<Folder class="w-4 h-4 text-greyOlive group-hover:text-parchment" />
@@ -299,9 +299,9 @@
 		<div class="flex items-center justify-between text-[10px] text-parchment/30 px-1 font-medium">
 			<div class="flex items-center gap-1.5">
 				<Info class="w-3 h-3" />
-				<span>v0.3.4</span>
+				<span>v0.3.5</span>
 			</div>
-			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.total || $favoritos.items.length} ítems</span>
+			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length} ítems</span>
 		</div>
 	</div>
 </div>

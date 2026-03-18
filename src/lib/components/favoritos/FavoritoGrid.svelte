@@ -9,6 +9,7 @@
 	import FavoritoForm from './FavoritoForm.svelte';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
 	import type { Favorito } from '$lib/types/api';
+	import OverflowTags from './OverflowTags.svelte';
 	import { onMount } from 'svelte';
 
 	let searchInput = $state<HTMLInputElement | null>(null);
@@ -200,19 +201,9 @@
 								<p class="text-xs text-greyOlive line-clamp-1 italic">{favorito.description || '-'}</p>
 							</td>
 							<td class="px-4 py-3 hidden lg:table-cell">
-								<div class="flex flex-wrap gap-1">
-									{#each (favorito.tags || []).slice(0, 3) as tag}
-										<button
-											onclick={(e) => { e.stopPropagation(); handleTagClick(tag); }}
-											class="px-1.5 py-0.5 rounded bg-silver/20 text-[9px] text-taupe border border-silver/30 hover:bg-taupe hover:text-parchment transition-colors"
-										>
-											{typeof tag === 'string' ? tag : tag.name}
-										</button>
-									{/each}
-									{#if (favorito.tags || []).length > 3}
-										<span class="text-[9px] text-greyOlive">+{favorito.tags!.length - 3}</span>
-									{/if}
-								</div>
+								{#if (favorito.tags || []).length > 0}
+									<OverflowTags tags={favorito.tags || []} onTagClick={handleTagClick} />
+								{/if}
 							</td>
 							<td class="px-4 py-3 text-right">
 								<div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

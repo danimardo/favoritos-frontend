@@ -24,7 +24,7 @@
 			: []
 	);
 
-	let folderId = $state(init?.folderId || init?.folder?.id || "");
+	let folderId = $state(String(init?.folderId || init?.folder?.id || ""));
 
 	let loading = $state(false);
 	let enriching = $state(false);
@@ -167,7 +167,7 @@
 							tags = existing.tags.map(t => typeof t === 'string' ? t : t.name);
 						}
 						if (existing.folderId || existing.folder?.id) {
-							folderId = existing.folderId || existing.folder?.id || '';
+							folderId = String(existing.folderId || existing.folder?.id || '');
 						}
 						duplicateDetected = true;
 						error = '';
