@@ -50,8 +50,6 @@ Backend: `cargo test; cargo clippy`
 
 ## Recent Changes
 
-- v0.3.5: Fix filtrado por carpeta (folderId), carpeta en edición (number→string), resaltado sidebar, total global, etiquetas dinámicas (OverflowTags), tooltip título/descripción, atajo Delete para limpiar filtros, favicon+Globe en tarjetas, título 2 líneas
-- v0.3.4: Filtrado por tag con tagId, menú contextual para eliminar etiquetas, diálogo de edición más alto y fix de tipo de ID
 - 001-favoritos-desktop: Constitución creada con stack completo y principios no negociables
 
 <!-- MANUAL ADDITIONS START -->

@@ -299,7 +299,7 @@
 		<div class="flex items-center justify-between text-[10px] text-parchment/30 px-1 font-medium">
 			<div class="flex items-center gap-1.5">
 				<Info class="w-3 h-3" />
-				<span>v0.3.5</span>
+				<span>v0.3.6</span>
 			</div>
 			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length} ítems</span>
 		</div>
