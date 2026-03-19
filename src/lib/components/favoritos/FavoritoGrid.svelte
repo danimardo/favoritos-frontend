@@ -190,6 +190,7 @@
 								<div class="flex flex-col">
 									<button
 										onclick={() => apiClient.openUrl(favorito.url)}
+										title={favorito.title || ''}
 										class="text-sm font-bold text-taupe hover:underline text-left truncate max-w-[200px] md:max-w-[300px]"
 									>
 										{favorito.title || 'Sin título'}
@@ -198,7 +199,7 @@
 								</div>
 							</td>
 							<td class="px-4 py-3 hidden md:table-cell">
-								<p class="text-xs text-greyOlive line-clamp-1 italic">{favorito.description || '-'}</p>
+								<p class="text-xs text-greyOlive line-clamp-1 italic" title={favorito.description || ''}>{favorito.description || '-'}</p>
 							</td>
 							<td class="px-4 py-3 hidden lg:table-cell">
 								{#if (favorito.tags || []).length > 0}

@@ -46,6 +46,14 @@
 			e.preventDefault();
 			if (gridComponent) gridComponent.focusSearch();
 		}
+		// Suprimir (Limpiar filtros)
+		if (e.key === 'Delete' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+			const tag = (e.target as HTMLElement)?.tagName;
+			if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !(e.target as HTMLElement)?.isContentEditable) {
+				e.preventDefault();
+				favoritos.selectFolder(null);
+			}
+		}
 	}
 
 	function handleSave() {

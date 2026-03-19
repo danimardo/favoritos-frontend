@@ -8,17 +8,19 @@
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
 	import FavoritoForm from './FavoritoForm.svelte';
 	import { favicons } from '$lib/services/favicons';
+	import { Globe } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 
 	let { favorito }: { favorito: Favorito } = $props();
 
 	let showDeleteDialog = $state(false);
 	let showEditDialog = $state(false);
-	let faviconUrl = $state<string | null>(null);
+	let faviconUrl = $state<string | null>(favorito.faviconUrl || null);
 
 	onMount(async () => {
-		if (favorito.domain) {
-			faviconUrl = await favicons.getOrFetch(favorito.domain);
+		if (!faviconUrl && favorito.domain) {
+			const cached = await favicons.getOrFetch(favorito.domain);
+			if (cached) faviconUrl = cached;
 		}
 	});
 
@@ -50,16 +52,20 @@
 >
 	<Card.Header class="p-4 pb-2">
 		<div class="flex justify-between items-start gap-2">
-			{#if faviconUrl || favorito.faviconUrl}
-				<img 
-					src={faviconUrl || favorito.faviconUrl} 
-					alt="" 
+			{#if faviconUrl}
+				<img
+					src={faviconUrl}
+					alt=""
 					class="w-8 h-8 rounded shrink-0 bg-white p-1 border border-silver/30"
-					onerror={(e) => ((e.currentTarget as HTMLElement).style.display = 'none')}
+					onerror={() => { faviconUrl = null; }}
 				/>
+			{:else}
+				<div class="w-8 h-8 rounded shrink-0 bg-silver/10 border border-silver/30 flex items-center justify-center">
+					<Globe class="w-4 h-4 text-greyOlive" />
+				</div>
 			{/if}
 			<div class="flex-1 min-w-0">
-				<Card.Title class="text-sm font-bold text-taupe truncate" title={favorito.title}>
+				<Card.Title class="text-sm font-bold text-taupe line-clamp-2" title={favorito.title}>
 					<button onclick={handleVisit} class="hover:underline text-left w-full">
 						{favorito.title}
 					</button>
