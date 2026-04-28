@@ -187,6 +187,34 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-050**: La tecla `Suprimir` (`Delete`) DEBE limpiar todos los filtros activos (carpeta, etiqueta y búsqueda) y volver al listado completo, equivalente a pulsar "Todos" en la sidebar. Solo se activa cuando el foco no está en un campo de texto.
 - **FR-051**: En la vista de tarjetas, cada tarjeta DEBE mostrar el favicon del sitio a la izquierda del título. Se usa `favorito.faviconUrl` (de la API) como fuente primaria, con fallback al servicio de cache local por dominio. Si no hay favicon disponible, se muestra un icono genérico (Globe).
 - **FR-052**: En la vista de tarjetas, el título DEBE poder ocupar hasta 2 líneas (`line-clamp-2`) antes de truncarse, aprovechando el espacio disponible en la tarjeta.
+- **FR-053**: La interfaz DEBE seguir una paleta de colores fija basada en Taupe (`#483C32`), Grey Olive (`#A9A9A1`), Silver (`#C0C0C0`), Parchment (`#F5F5DC`) y Powder Blush (`#E6E6FA`).
+- **FR-054**: Las tarjetas de favoritos DEBEN incluir una franja decorativa superior de color `powderBlush` como elemento de identidad visual.
+- **FR-055**: La descripción de los favoritos DEBE ser visible en la vista de tarjetas (hasta 3 líneas) y en la vista de lista (columna dedicada en pantallas grandes).
+- **FR-056**: La sidebar DEBE incluir un header con el logo del sistema (icono Star sobre fondo `powderBlush`) y el nombre de la aplicación.
+- **FR-057**: El estado activo en la sidebar y otros elementos de navegación DEBE utilizar el color `powderBlush` (o variantes con opacidad) para mantener la consistencia visual.
+- **FR-058**: Los textos e iconos de la sidebar DEBEN usar colores blancos con opacidades variables para garantizar legibilidad sobre el fondo taupe oscuro (`#483C32`). Específicamente:
+  - Textos primarios (Favoritos, Carpetas, Etiquetas): `white/70` a `white/60`
+  - Textos secundarios (Desktop, contadores): `white/50` a `white/60`
+  - Iconos inactivos: `white/60` a `white/80`
+  - Iconos activos: `powderBlush`
+  - Placeholders y hints: `white/40`
+  - Textos deshabilitados: `white/30`
+
+### UI/UX Design (Redesign v1.1.0)
+
+El diseño visual de la aplicación se rige por la "Constitución del Proyecto", priorizando una estética minimalista, profesional y de "paleta fija" inspirada en herramientas de productividad modernas.
+
+- **Paleta de Colores**:
+  - **Taupe (#483C32)**: Color principal para textos, bordes de enfoque y elementos de marca.
+  - **Parchment (#F5F5DC)**: Color de fondo para tarjetas y contenedores destacados.
+  - **Powder Blush (#E6E6FA)**: Color de acento para estados activos, botones destacados y franjas de identidad.
+  - **Grey Olive (#A9A9A1)**: Textos secundarios y descripciones.
+  - **Silver (#C0C0C0)**: Bordes sutiles y detalles decorativos.
+
+- **Componentes Clave**:
+  - **FavoritoCard**: Tarjetas con elevación sutil en hover, descripción visible, tags completos y footer informativo. Incluye acciones rápidas (Copiar, Editar, Eliminar) mediante iconos Lucide que aparecen al pasar el ratón.
+  - **FolderSidebar**: Navegación lateral con secciones colapsables, indicadores de conteo real y un encabezado de marca distintivo.
+  - **FavoritoGrid**: Layout adaptable que ajusta el tamaño de las tarjetas para maximizar la legibilidad, con una barra de herramientas superior que muestra el contexto actual (nombre de carpeta/etiqueta y total).
 
 ### Key Entities
 

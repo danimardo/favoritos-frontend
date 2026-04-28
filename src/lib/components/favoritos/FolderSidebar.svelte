@@ -2,7 +2,7 @@
 	import { favoritos, folderCounts, tagCounts } from '$lib/stores/favoritos';
 	import { apiClient } from '$lib/services/api-client';
 	import { Button } from '$lib/components/ui/button';
-	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Info, Tag, ChevronDown, ChevronRight, Search, X, Trash2 } from 'lucide-svelte';
+	import { Folder, FolderOpen, LayoutGrid, RefreshCw, Settings, Tag, ChevronDown, ChevronRight, Search, X, Trash2, Bookmark } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
@@ -83,15 +83,12 @@
 			await favoritos.loadFoldersAndTags();
 			await favoritos.fetchPage(true);
 		} finally {
-			setTimeout(() => {
-				refreshing = false;
-			}, 800);
+			setTimeout(() => { refreshing = false; }, 800);
 		}
 	}
 
 	const SIDEBAR_LIMIT = 30;
 
-	// Tags: sorted by bookmarkCount desc, filtered by search, limited when not searching
 	let sortedTags = $derived.by(() => {
 		const all = Object.entries($tagCounts).sort((a, b) => b[1] - a[1]);
 		const query = tagFilter.trim();
@@ -100,7 +97,6 @@
 		return { items: filtered, total: all.length, filtered: true };
 	});
 
-	// Folders: sorted by bookmarkCount desc, filtered by search, limited when not searching
 	let sortedFolders = $derived.by(() => {
 		const all = [...$favoritos.folders].sort((a, b) => (b.bookmarkCount ?? 0) - (a.bookmarkCount ?? 0));
 		const query = folderFilter.trim();
@@ -110,203 +106,205 @@
 	});
 </script>
 
-<div class="flex flex-col h-screen bg-taupe text-parchment w-64 border-r border-white/10 shadow-xl overflow-hidden">
-	<!-- Header Sidebar -->
-	<div class="p-6 border-b border-white/5 bg-black/5">
-		<h2 class="text-xs font-bold uppercase tracking-widest text-parchment/40">Navegación</h2>
+<div class="flex flex-col h-screen w-[220px] border-r border-white/5 shadow-xl overflow-hidden" style="background: linear-gradient(180deg, #3b2f25 0%, #483C32 55%);">
+
+	<!-- ── Branding ─────────────────────────────────────────── -->
+	<div class="px-4 py-4 border-b border-white/5 flex items-center gap-3 bg-black/10">
+		<div class="w-7 h-7 rounded-lg bg-white/8 flex items-center justify-center shrink-0">
+			<Bookmark class="w-3.5 h-3.5 text-white/80" />
+		</div>
+		<div>
+			<p class="text-[13px] font-bold text-white tracking-tight leading-none">Favoritos</p>
+			<p class="text-[9px] text-white/60 uppercase tracking-widest mt-0.5">Desktop</p>
+		</div>
 		{#if $favoritos.loading}
-			<div class="flex items-center gap-2 mt-2">
-				<div class="w-3 h-3 border-2 border-parchment/20 border-t-parchment/60 rounded-full animate-spin"></div>
-				<span class="text-[10px] text-parchment/40">
-					{#if $favoritos.items.length > 0}
-						Sincronizando... {$favoritos.items.length}
-					{:else}
-						Cargando...
-					{/if}
-				</span>
-			</div>
+			<div class="ml-auto w-3 h-3 border-2 border-parchment/15 border-t-parchment/50 rounded-full animate-spin shrink-0"></div>
 		{/if}
 	</div>
 
-	<!-- Contenido con scroll -->
-	<div class="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-		<!-- Opción Todos -->
+	<!-- ── Nav scroll area ────────────────────────────────────── -->
+	<div class="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5 custom-scrollbar">
+
+		<!-- Todos -->
 		<button
 			onclick={() => selectFolder(null)}
-			class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {$favoritos.selectedFolderId === null && $favoritos.selectedTag === null ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
+			class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all group {$favoritos.selectedFolderId === null && $favoritos.selectedTag === null ? 'bg-black/35 text-white font-semibold shadow-inner' : 'hover:bg-white/5 text-white/70'}"
 		>
-			<div class="flex items-center gap-3">
-				<LayoutGrid class="w-4 h-4 {$favoritos.selectedFolderId === null && $favoritos.selectedTag === null ? 'text-powderBlush' : 'text-greyOlive group-hover:text-parchment'}" />
-				<span class="text-sm">Todos</span>
+			<div class="flex items-center gap-2.5">
+				<LayoutGrid class="w-3.5 h-3.5 {$favoritos.selectedFolderId === null && $favoritos.selectedTag === null ? 'text-powderBlush' : 'text-white/60 group-hover:text-white/80'} shrink-0" />
+				<span class="text-[12.5px] text-white/70">Todos</span>
 			</div>
-			<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-normal">
+			<span class="text-[9px] bg-white/8 px-1.5 py-0.5 rounded-full font-normal tabular-nums">
 				{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length}
 			</span>
 		</button>
 
-		<!-- Sección Carpetas (colapsable) -->
+		<!-- ── Carpetas ── -->
 		<button
-			onclick={() => { foldersExpanded = !foldersExpanded; invoke('preference_set', { key: 'sidebar_folders_expanded', value: String(foldersExpanded) }).catch(console.warn); }}
-			class="w-full flex items-center gap-2 pt-6 pb-2 px-3 hover:opacity-80 transition-opacity"
+			onclick={() => {
+				foldersExpanded = !foldersExpanded;
+				invoke('preference_set', { key: 'sidebar_folders_expanded', value: String(foldersExpanded) }).catch(console.warn);
+			}}
+			class="w-full flex items-center gap-2 pt-5 pb-1.5 px-2.5 hover:opacity-80 transition-opacity"
 		>
 			{#if foldersExpanded}
-				<ChevronDown class="w-3 h-3 text-parchment/30" />
+				<ChevronDown class="w-2.5 h-2.5 text-white/50" />
 			{:else}
-				<ChevronRight class="w-3 h-3 text-parchment/30" />
+				<ChevronRight class="w-2.5 h-2.5 text-white/50" />
 			{/if}
-			<p class="text-[10px] font-bold uppercase text-parchment/30 tracking-wider">Carpetas</p>
+			<p class="text-[9px] font-bold uppercase text-white/60 tracking-wider">Carpetas</p>
 			{#if !foldersExpanded}
-				<span class="text-[10px] text-parchment/20 ml-auto">{$favoritos.folders.length}</span>
+				<span class="text-[9px] text-white/50 ml-auto">{$favoritos.folders.length}</span>
 			{/if}
 		</button>
 
 		{#if foldersExpanded}
-			<div class="relative px-2 pb-1">
-				<Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment/30 pointer-events-none" />
+			<!-- Search carpetas -->
+			<div class="relative px-1 pb-1">
+				<Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white/40 pointer-events-none" />
 				<input
 					type="text"
 					bind:value={folderFilter}
 					placeholder="Buscar en {sortedFolders.total} carpetas..."
-					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
+					class="w-full bg-white/4 border border-white/8 rounded-md pl-6 pr-6 py-1.5 text-[10.5px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/18 focus:bg-white/8 transition-colors"
 				/>
 				{#if folderFilter}
-					<button
-						onclick={() => folderFilter = ''}
-						class="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/30 hover:text-parchment/60 transition-colors"
-					>
-						<X class="w-3 h-3" />
+					<button onclick={() => folderFilter = ''} class="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
+						<X class="w-2.5 h-2.5" />
 					</button>
 				{/if}
 			</div>
+
 			{#each sortedFolders.items as folder}
 				<button
 					onclick={() => selectFolder(folder.id)}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group {String($favoritos.selectedFolderId) === String(folder.id) ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
+					class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all group {String($favoritos.selectedFolderId) === String(folder.id) ? 'bg-black/35 text-white font-semibold shadow-inner' : 'hover:bg-white/5 text-white/70'}"
 				>
-					<div class="flex items-center gap-3">
+					<div class="flex items-center gap-2.5 min-w-0">
 						{#if String($favoritos.selectedFolderId) === String(folder.id)}
-							<FolderOpen class="w-4 h-4 text-powderBlush" />
+							<FolderOpen class="w-3.5 h-3.5 text-powderBlush shrink-0" />
 						{:else}
-							<Folder class="w-4 h-4 text-greyOlive group-hover:text-parchment" />
+							<Folder class="w-3.5 h-3.5 text-white/60 group-hover:text-white/80 shrink-0" />
 						{/if}
-						<span class="text-sm truncate max-w-[130px]">{folder.name}</span>
+						<span class="text-[11.5px] truncate">{folder.name}</span>
 					</div>
 					{#if $folderCounts[folder.id]}
-						<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-normal">
+						<span class="text-[9px] bg-white/8 px-1.5 py-0.5 rounded-full font-normal tabular-nums shrink-0">
 							{$folderCounts[folder.id]}
 						</span>
 					{/if}
 				</button>
 			{:else}
-				<div class="px-3 py-4 text-center">
-					<p class="text-xs text-parchment/20 italic">{folderFilter ? 'Sin resultados' : 'No hay carpetas'}</p>
+				<div class="px-3 py-3 text-center">
+					<p class="text-[10px] text-white/40 italic">{folderFilter ? 'Sin resultados' : 'No hay carpetas'}</p>
 				</div>
 			{/each}
+
 			{#if !sortedFolders.filtered && sortedFolders.total > SIDEBAR_LIMIT}
-				<p class="text-[10px] text-parchment/20 text-center py-1 italic">
-					Mostrando {SIDEBAR_LIMIT} de {sortedFolders.total} — usa el buscador para ver más
+				<p class="text-[9px] text-parchment/18 text-center py-1 italic">
+					{SIDEBAR_LIMIT} de {sortedFolders.total} — usa el buscador
 				</p>
 			{/if}
 		{/if}
 
-		<!-- Sección Etiquetas (colapsable) -->
+		<!-- ── Etiquetas ── -->
 		<button
-			onclick={() => { tagsExpanded = !tagsExpanded; invoke('preference_set', { key: 'sidebar_tags_expanded', value: String(tagsExpanded) }).catch(console.warn); }}
-			class="w-full flex items-center gap-2 pt-6 pb-2 px-3 hover:opacity-80 transition-opacity"
+			onclick={() => {
+				tagsExpanded = !tagsExpanded;
+				invoke('preference_set', { key: 'sidebar_tags_expanded', value: String(tagsExpanded) }).catch(console.warn);
+			}}
+			class="w-full flex items-center gap-2 pt-5 pb-1.5 px-2.5 hover:opacity-80 transition-opacity"
 		>
 			{#if tagsExpanded}
-				<ChevronDown class="w-3 h-3 text-parchment/30" />
+				<ChevronDown class="w-2.5 h-2.5 text-white/50" />
 			{:else}
-				<ChevronRight class="w-3 h-3 text-parchment/30" />
+				<ChevronRight class="w-2.5 h-2.5 text-white/50" />
 			{/if}
-			<p class="text-[10px] font-bold uppercase text-parchment/30 tracking-wider">Etiquetas</p>
+			<p class="text-[9px] font-bold uppercase text-white/60 tracking-wider">Etiquetas</p>
 			{#if !tagsExpanded}
-				<span class="text-[10px] text-parchment/20 ml-auto">{$favoritos.allTags.length}</span>
+				<span class="text-[9px] text-white/50 ml-auto">{$favoritos.allTags.length}</span>
 			{/if}
 		</button>
 
 		{#if tagsExpanded}
-			<div class="relative px-2 pb-1">
-				<Search class="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment/30 pointer-events-none" />
+			<!-- Search etiquetas -->
+			<div class="relative px-1 pb-1">
+				<Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white/40 pointer-events-none" />
 				<input
 					type="text"
 					bind:value={tagFilter}
 					placeholder="Buscar en {sortedTags.total} etiquetas..."
-					class="w-full bg-white/5 border border-white/10 rounded-md pl-7 pr-7 py-1.5 text-xs text-parchment placeholder:text-parchment/25 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-colors"
+					class="w-full bg-white/4 border border-white/8 rounded-md pl-6 pr-6 py-1.5 text-[10.5px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/18 focus:bg-white/8 transition-colors"
 				/>
 				{#if tagFilter}
-					<button
-						onclick={() => tagFilter = ''}
-						class="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/30 hover:text-parchment/60 transition-colors"
-					>
-						<X class="w-3 h-3" />
+					<button onclick={() => tagFilter = ''} class="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
+						<X class="w-2.5 h-2.5" />
 					</button>
 				{/if}
 			</div>
+
 			{#each sortedTags.items as [tagName, count]}
 				<button
 					onclick={() => selectTag(tagName)}
 					oncontextmenu={(e) => handleTagContextMenu(e, tagName)}
-					class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group {$favoritos.selectedTag === tagName ? 'bg-black/40 text-white font-bold shadow-inner' : 'hover:bg-white/5 text-parchment/70'}"
+					class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all group {$favoritos.selectedTag === tagName ? 'bg-black/35 text-white font-semibold shadow-inner' : 'hover:bg-white/5 text-white/70'}"
 				>
-					<div class="flex items-center gap-3">
-						<Tag class="w-3.5 h-3.5 {$favoritos.selectedTag === tagName ? 'text-powderBlush' : 'text-greyOlive group-hover:text-parchment'}" />
-						<span class="text-sm truncate max-w-[130px]">{tagName}</span>
+					<div class="flex items-center gap-2.5 min-w-0">
+						<Tag class="w-3 h-3 {$favoritos.selectedTag === tagName ? 'text-powderBlush' : 'text-white/60 group-hover:text-white/80'} shrink-0" />
+						<span class="text-[11.5px] truncate">{tagName}</span>
 					</div>
-					<span class="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-normal">
+					<span class="text-[9px] bg-white/8 px-1.5 py-0.5 rounded-full font-normal tabular-nums shrink-0">
 						{count}
 					</span>
 				</button>
 			{:else}
-				<div class="px-3 py-4 text-center">
-					<p class="text-xs text-parchment/20 italic">{tagFilter ? 'Sin resultados' : 'No hay etiquetas'}</p>
+				<div class="px-3 py-3 text-center">
+					<p class="text-[10px] text-white/40 italic">{tagFilter ? 'Sin resultados' : 'No hay etiquetas'}</p>
 				</div>
 			{/each}
+
 			{#if !sortedTags.filtered && sortedTags.total > SIDEBAR_LIMIT}
-				<p class="text-[10px] text-parchment/20 text-center py-1 italic">
-					Mostrando {SIDEBAR_LIMIT} de {sortedTags.total} — usa el buscador para ver más
+				<p class="text-[9px] text-parchment/18 text-center py-1 italic">
+					{SIDEBAR_LIMIT} de {sortedTags.total} — usa el buscador
 				</p>
 			{/if}
 		{/if}
 	</div>
 
-	<!-- Acciones Globales (Fijadas abajo) -->
-	<div class="px-3 py-4 border-t border-white/5 bg-black/10 space-y-1">
+	<!-- ── Acciones fijas abajo ────────────────────────────────── -->
+	<div class="px-2.5 py-3 border-t border-white/5 space-y-0.5">
 		<button
 			onclick={handleRefresh}
 			disabled={refreshing}
-			class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-parchment/60 hover:bg-white/5 hover:text-parchment transition-all group disabled:opacity-50"
+			class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11.5px] text-white/70 hover:bg-white/5 hover:text-white/90 transition-all group disabled:opacity-40"
 		>
-			<div class="p-1.5 bg-white/5 rounded-md group-hover:bg-white/10">
-				<RefreshCw class="w-3.5 h-3.5 {refreshing ? 'animate-spin' : ''}" />
+			<div class="w-5 h-5 bg-white/5 rounded-md flex items-center justify-center group-hover:bg-white/10">
+				<RefreshCw class="w-3 h-3 text-white/70 {refreshing ? 'animate-spin' : ''}" />
 			</div>
 			<span class="font-medium">{refreshing ? 'Sincronizando...' : 'Refrescar'}</span>
 		</button>
 
 		<button
 			onclick={() => goto('/configuracion')}
-			class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-parchment/60 hover:bg-white/5 hover:text-parchment transition-all group"
+			class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11.5px] text-white/70 hover:bg-white/5 hover:text-white/90 transition-all group"
 		>
-			<div class="p-1.5 bg-white/5 rounded-md group-hover:bg-white/10">
-				<Settings class="w-3.5 h-3.5" />
+			<div class="w-5 h-5 bg-white/5 rounded-md flex items-center justify-center group-hover:bg-white/10">
+				<Settings class="w-3 h-3 text-white/70" />
 			</div>
 			<span class="font-medium">Configuración</span>
 		</button>
 	</div>
 
-	<!-- Footer Sidebar Informativo -->
-	<div class="p-4 bg-black/30">
-		<div class="flex items-center justify-between text-[10px] text-parchment/30 px-1 font-medium">
-			<div class="flex items-center gap-1.5">
-				<Info class="w-3 h-3" />
-				<span>v0.3.6</span>
-			</div>
-			<span class="bg-white/5 px-2 py-0.5 rounded-full">{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length} ítems</span>
-		</div>
+	<!-- ── Footer ─────────────────────────────────────────────── -->
+	<div class="px-4 py-2.5 bg-black/25 flex items-center justify-between">
+		<span class="text-[9px] text-white/50 font-medium">v0.3.6</span>
+		<span class="text-[9px] text-white/60 bg-white/5 px-2 py-0.5 rounded-full tabular-nums">
+			{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length} ítems
+		</span>
 	</div>
 </div>
 
-<!-- Context menu para etiquetas -->
+<!-- Context menu etiquetas -->
 {#if contextMenu}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -333,13 +331,13 @@
 
 <style>
 	.custom-scrollbar::-webkit-scrollbar {
-		width: 4px;
+		width: 3px;
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.05);
+		background: rgba(255, 255, 255, 0.06);
 		border-radius: 10px;
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.12);
 	}
 </style>
