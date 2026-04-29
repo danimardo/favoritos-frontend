@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(gh auth:*)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Bash(cargo check:*)",
+      "Bash(rustc:*)"
     ]
   }
 }

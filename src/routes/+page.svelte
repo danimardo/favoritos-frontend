@@ -59,25 +59,38 @@
 	function handleSave() {
 		open = false;
 	}
+
+	// Título dinámico según filtro activo
+	let pageTitle = $derived.by(() => {
+		if ($favoritos.selectedTag) return `#${$favoritos.selectedTag}`;
+		if ($favoritos.selectedFolderId) {
+			const folder = $favoritos.folders.find(f => String(f.id) === String($favoritos.selectedFolderId));
+			return folder ? folder.name : 'Favoritos';
+		}
+		return 'Mis Favoritos';
+	});
 </script>
 
-<div class="space-y-8">
+<!-- Cabecera compacta -->
+<div class="mb-5 flex items-end justify-between gap-4">
 	<div>
-		<h1 class="text-4xl font-bold text-taupe">Mis Favoritos</h1>
-		<p class="text-greyOlive mt-2">Gestiona tus enlaces importantes de forma segura.</p>
+		<h1 class="text-[22px] font-bold text-taupe tracking-tight leading-none">{pageTitle}</h1>
+		{#if !$favoritos.selectedTag && !$favoritos.selectedFolderId}
+			<p class="text-[11.5px] text-greyOlive/70 mt-1">Gestiona tus enlaces importantes de forma segura.</p>
+		{/if}
 	</div>
-
-	<FavoritoGrid bind:this={gridComponent} />
 </div>
 
-<!-- FAB: Nuevo Favorito (flotante abajo-derecha) -->
+<FavoritoGrid bind:this={gridComponent} />
+
+<!-- FAB: Nuevo Favorito -->
 <button
 	onclick={() => open = true}
-	class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-taupe/80 text-parchment hover:bg-taupe/95 shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center backdrop-blur-sm"
+	class="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-taupe text-parchment hover:bg-taupe/90 shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center"
 	aria-label="Nuevo Favorito"
 	title="Nuevo Favorito (Ctrl+N o +)"
 >
-	<Plus class="w-7 h-7" />
+	<Plus class="w-5 h-5" />
 </button>
 
 <Dialog.Root bind:open>

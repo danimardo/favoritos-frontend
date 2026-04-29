@@ -1,6 +1,6 @@
 [package]
 name = "favoritos-frontend"
-version = "0.3.6"
+version = "0.3.7"
 description = "Favoritos Desktop - A native desktop app for managing favorites"
 authors = ["you"]
 edition = "2021"

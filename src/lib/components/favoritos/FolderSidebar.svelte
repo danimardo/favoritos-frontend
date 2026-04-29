@@ -297,7 +297,7 @@
 
 	<!-- ── Footer ─────────────────────────────────────────────── -->
 	<div class="px-4 py-2.5 bg-black/25 flex items-center justify-between">
-		<span class="text-[9px] text-white/50 font-medium">v0.3.6</span>
+		<span class="text-[9px] text-white/50 font-medium">v0.3.7</span>
 		<span class="text-[9px] text-white/60 bg-white/5 px-2 py-0.5 rounded-full tabular-nums">
 			{$favoritos.globalTotal || $favoritos.total || $favoritos.items.length} ítems
 		</span>
