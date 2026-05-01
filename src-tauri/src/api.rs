@@ -346,6 +346,11 @@ impl ApiClient {
             }
         }
 
+        // Normalización: eliminar visitCount si está presente
+        if let Some(obj) = favorite.as_object_mut() {
+            obj.remove("visitCount");
+        }
+
         tracing::debug!("Creando favorito en: {} con datos: {}", url, favorite);
         
         let response = self
@@ -545,6 +550,11 @@ impl ApiClient {
                     obj.remove("tags");
                 }
             }
+        }
+
+        // Normalización: eliminar visitCount si está presente
+        if let Some(obj) = favorite.as_object_mut() {
+            obj.remove("visitCount");
         }
 
         tracing::debug!("Actualizando favorito {} con datos: {}", id, favorite);
