@@ -131,7 +131,7 @@
 
 | Atajo | Ámbito | Acción |
 |-------|--------|--------|
-| `Alt + Space` | Global | Búsqueda rápida (ventana mini) |
+| `Alt + Space` | Global | Búsqueda rápida (ventana mini). Fallback: `Ctrl + Alt + Space` si el primero está en uso. |
 | `Ctrl + N` | App | Abrir diálogo nuevo favorito |
 | `+` | App | Abrir diálogo nuevo favorito (fuera de inputs) |
 | `Ctrl + F` | App | Enfocar buscador principal |

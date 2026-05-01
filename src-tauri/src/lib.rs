@@ -39,7 +39,8 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        if shortcut.matches(Modifiers::ALT, Code::Space) {
+                        if shortcut.matches(Modifiers::ALT, Code::Space) || 
+                           shortcut.matches(Modifiers::CONTROL | Modifiers::ALT, Code::Space) {
                             if let Some(window) = app.get_webview_window("search") {
                                 if window.is_visible().unwrap_or(false) {
                                     let _ = window.hide();
@@ -56,8 +57,15 @@ pub fn run() {
         .setup(|app| {
             info!("Setting up application...");
 
-            // Register global shortcut
-            app.global_shortcut().register("Alt+Space")?;
+            // Register global shortcut with fallback
+            if let Err(e) = app.global_shortcut().register("Alt+Space") {
+                info!("Could not register Alt+Space (likely already in use): {}", e);
+                if let Err(e2) = app.global_shortcut().register("Ctrl+Alt+Space") {
+                    info!("Could not register fallback Ctrl+Alt+Space: {}", e2);
+                } else {
+                    info!("Registered fallback shortcut: Ctrl+Alt+Space");
+                }
+            }
 
             // Initialize favicon cache
             let cache_dir = app
