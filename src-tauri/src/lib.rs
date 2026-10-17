@@ -9,8 +9,25 @@ mod tray;
 use commands::AppState;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, ShortcutState};
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
+
+/// Alterna la visibilidad de la ventana de búsqueda global.
+fn toggle_search_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("search") {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
+}
+
+/// Indica si los argumentos de línea de comandos piden abrir la búsqueda global.
+fn wants_search(args: &[String]) -> bool {
+    args.iter().any(|a| a == "--search")
+}
 
 fn setup_logging() {
     let log_level_str = config::ConfigManager::get_initial_log_level();
@@ -28,6 +45,16 @@ pub fn run() {
     info!("Starting Favoritos Desktop application");
 
     tauri::Builder::default()
+        // Una sola instancia: una segunda ejecución (p. ej. `--search` lanzado desde un
+        // atajo del sistema en Wayland) se redirige a la instancia ya abierta.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if wants_search(&args) {
+                toggle_search_window(app);
+            } else if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -39,16 +66,10 @@ pub fn run() {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        if shortcut.matches(Modifiers::ALT, Code::Space) || 
-                           shortcut.matches(Modifiers::CONTROL | Modifiers::ALT, Code::Space) {
-                            if let Some(window) = app.get_webview_window("search") {
-                                if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
-                                } else {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                }
-                            }
+                        if shortcut.matches(Modifiers::ALT, Code::Space)
+                            || shortcut.matches(Modifiers::CONTROL | Modifiers::ALT, Code::Space)
+                        {
+                            toggle_search_window(app);
                         }
                     }
                 })
@@ -57,13 +78,14 @@ pub fn run() {
         .setup(|app| {
             info!("Setting up application...");
 
-            // Register global shortcut with fallback
+            // Register global shortcut con fallback a Ctrl+Alt+Space. En Wayland (y en algunos
+            // entornos Linux) el registro puede fallar: no es fatal, se usa
+            // `favoritos-frontend --search` desde un atajo del sistema.
             if let Err(e) = app.global_shortcut().register("Alt+Space") {
-                info!("Could not register Alt+Space (likely already in use): {}", e);
-                if let Err(e2) = app.global_shortcut().register("Ctrl+Alt+Space") {
-                    info!("Could not register fallback Ctrl+Alt+Space: {}", e2);
-                } else {
-                    info!("Registered fallback shortcut: Ctrl+Alt+Space");
+                warn!("No se pudo registrar Alt+Space (¿en uso?): {e}");
+                match app.global_shortcut().register("Ctrl+Alt+Space") {
+                    Ok(()) => info!("Atajo de respaldo registrado: Ctrl+Alt+Space"),
+                    Err(e2) => warn!("No se pudo registrar Ctrl+Alt+Space: {e2}"),
                 }
             }
 
@@ -80,11 +102,20 @@ pub fn run() {
             });
 
             // Setup system tray
-            tray::setup_tray(app.handle())?;
+            // En Linux puede no haber bandeja (p. ej. GNOME sin extensión): no es fatal.
+            if let Err(e) = tray::setup_tray(app.handle()) {
+                warn!("No se pudo crear el icono de bandeja: {e}");
+            }
 
             // Ensure search window is hidden on start
             if let Some(search_window) = app.get_webview_window("search") {
                 let _ = search_window.hide();
+            }
+
+            // Arranque con `--search`: abrir la búsqueda global directamente
+            let args: Vec<String> = std::env::args().collect();
+            if wants_search(&args) {
+                toggle_search_window(app.handle());
             }
 
             info!("Application setup complete");

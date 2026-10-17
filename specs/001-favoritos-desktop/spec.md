@@ -198,6 +198,10 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
   - Iconos inactivos: `white/60` a `white/80`
   - Iconos activos: `powderBlush`
   - Placeholders y hints: `white/40`
+- **FR-059**: La aplicación DEBE estar disponible para Windows 10/11 (instalador `.exe` NSIS), Debian/Ubuntu (`.deb`) y Fedora (`.rpm`), con soporte de sesiones X11 y Wayland. Los tres instaladores se generan con GitHub Actions (`.github/workflows/release.yml`) al subir una etiqueta `vX.Y.Z` y se adjuntan al release de GitHub.
+- **FR-060**: El fallo al registrar el atajo global `Alt+Space` o al crear el icono de bandeja NO DEBE impedir el arranque de la aplicación (se registra un aviso en el log). Esto cubre Wayland y entornos Linux sin bandeja (p. ej. GNOME sin extensión AppIndicator).
+- **FR-061**: La aplicación DEBE ejecutarse como instancia única. Lanzar de nuevo el ejecutable con el argumento `--search` alterna la ventana de búsqueda global de la instancia en ejecución (o la abre si se arranca con él). En Wayland, donde el atajo global no funciona, el usuario DEBE asignar el comando `favoritos-frontend --search` a un atajo de teclado del sistema. Sin `--search`, una segunda ejecución muestra la ventana principal.
+- **FR-062**: En Wayland, la ventana de búsqueda global puede no mantenerse siempre encima ni centrarse, según el compositor; esta degradación es aceptada.
   - Textos deshabilitados: `white/30`
 
 ### UI/UX Design (Redesign v1.1.0)
@@ -244,7 +248,7 @@ El diseño visual de la aplicación se rige por la "Constitución del Proyecto",
 - La API REST de Favoritos ya está implementada y funcional
 - La API expone endpoints para CRUD de favoritos, validación de health y obtención de metadata
 - El usuario tiene credenciales válidas de la API Favoritos
-- El sistema operativo es Windows 10/11 (prioridad), con soporte futuro para macOS y Linux
+- El sistema operativo es Windows 10/11 (prioridad) o Linux (Debian/Ubuntu y Fedora, X11 y Wayland); macOS queda como soporte futuro
 - El navegador predeterminado del sistema está configurado correctamente
 - La API Key tiene permisos suficientes para realizar todas las operaciones necesarias
 - Los archivos HTML de marcadores para importación siguen el formato Netscape Bookmark estándar

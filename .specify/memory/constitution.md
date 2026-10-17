@@ -168,14 +168,14 @@ src-tauri/src/
 - La aplicación debe permitir lectura de datos ya cargados cuando la API no está disponible.
 
 ### Plataforma
-- **Prioritaria**: Windows 10/11
-- **Futuro**: macOS y Linux
+- **Soportadas**: Windows 10/11, Debian/Ubuntu (`.deb`) y Fedora (`.rpm`), en X11 y Wayland
+- **Futuro**: macOS
 
 ---
 
 ## Governance
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-03-15
+**Version**: 1.2.0 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-10-17
 
 **Reglas**:
 - Esta constitución SUPERA cualquier otra práctica o preferencia individual
