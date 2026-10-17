@@ -202,6 +202,8 @@ Como usuario, necesito importar una colección grande de favoritos desde un arch
 - **FR-060**: El fallo al registrar el atajo global `Alt+Space` o al crear el icono de bandeja NO DEBE impedir el arranque de la aplicación (se registra un aviso en el log). Esto cubre Wayland y entornos Linux sin bandeja (p. ej. GNOME sin extensión AppIndicator).
 - **FR-061**: La aplicación DEBE ejecutarse como instancia única. Lanzar de nuevo el ejecutable con el argumento `--search` alterna la ventana de búsqueda global de la instancia en ejecución (o la abre si se arranca con él). En Wayland, donde el atajo global no funciona, el usuario DEBE asignar el comando `favoritos-frontend --search` a un atajo de teclado del sistema. Sin `--search`, una segunda ejecución muestra la ventana principal.
 - **FR-062**: En Wayland, la ventana de búsqueda global puede no mantenerse siempre encima ni centrarse, según el compositor; esta degradación es aceptada.
+- **FR-063**: Si `Alt+Space` no puede registrarse (p. ej. porque otra aplicación lo usa), la aplicación DEBE intentar `Ctrl+Alt+Space` como atajo global de respaldo, que abre y cierra la búsqueda igual que `Alt+Space`.
+- **FR-064**: Al crear o actualizar un favorito, el backend DEBE eliminar el campo `visitCount` del cuerpo enviado a la API (`POST` y `PUT`), de modo que el contador de visitas solo lo gestione la API y no sea sobrescrito por el cliente.
   - Textos deshabilitados: `white/30`
 
 ### UI/UX Design (Redesign v1.1.0)
